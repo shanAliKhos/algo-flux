@@ -148,6 +148,10 @@ function TradeFormationContent({ data, className }: { data: any; className?: str
   const [expandedInstrument, setExpandedInstrument] = useState<string | null>(
     data.opportunityDetection.selectedInstrument || null
   );
+  // Track which instrument is visually selected (clicked)
+  const [visuallySelected, setVisuallySelected] = useState<string | null>(
+    data.opportunityDetection.selectedInstrument || null
+  );
   
   const sections = [
     {
@@ -161,13 +165,17 @@ function TradeFormationContent({ data, className }: { data: any; className?: str
             {data.opportunityDetection.instruments.map((instrument: { symbol: string; reason: string } | string, i: number) => {
               // Handle both old format (string) and new format (object)
               const symbol = typeof instrument === 'string' ? instrument : instrument.symbol;
-              const isSelected = symbol === data.opportunityDetection.selectedInstrument;
+              // Use visually selected if set, otherwise fall back to data's selectedInstrument
+              const isSelected = symbol === (visuallySelected || data.opportunityDetection.selectedInstrument);
               const isExpanded = expandedInstrument === symbol;
               
               return (
                 <div 
                   key={i}
                   onClick={() => {
+                    // Set as visually selected
+                    setVisuallySelected(symbol);
+                    // Expand/collapse reason
                     setExpandedInstrument(isExpanded ? null : symbol);
                   }}
                   className={cn(
@@ -177,7 +185,7 @@ function TradeFormationContent({ data, className }: { data: any; className?: str
                       : "bg-muted/30 text-muted-foreground hover:bg-muted/50 border border-border",
                     isExpanded && !isSelected && "ring-2 ring-primary/50"
                   )}
-                  title="Click to see reason"
+                  title="Click to select and see reason"
                 >
                   {symbol}
                   {isSelected && <Eye className="w-3 h-3 mx-auto mt-1 text-green-400" />}
@@ -201,7 +209,8 @@ function TradeFormationContent({ data, className }: { data: any; className?: str
             const reason = typeof instrument === 'string' 
               ? (data.opportunityDetection.reason || 'No reason provided')
               : instrument.reason;
-            const isSelected = symbol === data.opportunityDetection.selectedInstrument;
+            // Use visually selected if set, otherwise fall back to data's selectedInstrument
+            const isSelected = symbol === (visuallySelected || data.opportunityDetection.selectedInstrument);
             
             return (
               <div 
