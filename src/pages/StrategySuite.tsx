@@ -1,0 +1,190 @@
+import { Layout } from "@/components/layout/Layout";
+import { GlassCard } from "@/components/ui/GlassCard";
+import { StatusBadge } from "@/components/ui/StatusBadge";
+import { Link } from "react-router-dom";
+import {
+  Layers,
+  Target,
+  BarChart3,
+  TrendingUp,
+  LineChart,
+  Cpu,
+  PieChart,
+  ArrowRight,
+  Clock,
+  Shield,
+} from "lucide-react";
+
+const strategies = [
+  {
+    name: "Nuvex",
+    icon: Target,
+    tagline: "Institutional Reversal Engine",
+    assets: ["Forex", "Gold", "Indices", "Stocks"],
+    holdingTime: "Intraday / Swing",
+    edge: "Engulfing Reversals, RSI Divergence",
+    risk: "balanced" as const,
+    instruments: ["XAUUSD", "EURUSD", "GBPUSD", "NAS100", "AAPL"],
+    path: "/strategy/nuvex",
+    color: "from-green-500 to-emerald-600",
+  },
+  {
+    name: "Xylo",
+    icon: BarChart3,
+    tagline: "AI Market Maker",
+    assets: ["Forex Majors", "Crypto", "Gold"],
+    holdingTime: "Scalping / Intraday",
+    edge: "Spread Capture, Micro-structure",
+    risk: "conservative" as const,
+    instruments: ["EURUSD", "BTCUSDT", "ETHUSDT", "XAUUSD"],
+    path: "/strategy/xylo",
+    color: "from-blue-500 to-cyan-600",
+  },
+  {
+    name: "Drav",
+    icon: TrendingUp,
+    tagline: "Smart Money AI",
+    assets: ["Forex", "Indices", "Gold"],
+    holdingTime: "Intraday / Swing",
+    edge: "SMC, Liquidity Sweeps, ICT",
+    risk: "aggressive" as const,
+    instruments: ["XAUUSD", "NAS100", "US30", "EURUSD"],
+    path: "/strategy/drav",
+    color: "from-orange-500 to-amber-600",
+  },
+  {
+    name: "Yark",
+    icon: LineChart,
+    tagline: "Quantitative Statistical Engine",
+    assets: ["All Markets"],
+    holdingTime: "Swing / Position",
+    edge: "Correlation, Volatility, Probability",
+    risk: "conservative" as const,
+    instruments: ["Cross-asset pairs", "Indices", "FX Majors"],
+    path: "/strategy/yark",
+    color: "from-purple-500 to-violet-600",
+  },
+  {
+    name: "Tenzor",
+    icon: Cpu,
+    tagline: "Momentum & Trend Engine",
+    assets: ["Stocks", "Indices", "Crypto"],
+    holdingTime: "Swing",
+    edge: "Momentum Breakouts, Trend Following",
+    risk: "aggressive" as const,
+    instruments: ["TSLA", "AAPL", "NVDA", "NAS100", "BTCUSDT"],
+    path: "/strategy/tenzor",
+    color: "from-red-500 to-rose-600",
+  },
+  {
+    name: "Omnix",
+    icon: PieChart,
+    tagline: "Multi-Factor Hedge Fund Brain",
+    assets: ["All Markets"],
+    holdingTime: "All Timeframes",
+    edge: "Multi-Factor, Portfolio Optimization",
+    risk: "balanced" as const,
+    instruments: ["All instruments from other strategies"],
+    path: "/strategy/omnix",
+    color: "from-primary to-green-400",
+  },
+];
+
+export default function StrategySuite() {
+  return (
+    <Layout>
+      <div className="min-h-screen p-6 lg:p-8 space-y-8">
+        {/* Hero */}
+        <div className="text-center py-8">
+          <div className="inline-flex items-center gap-3 mb-4">
+            <Layers className="w-10 h-10 text-primary" />
+            <h1 className="font-display text-4xl lg:text-5xl font-bold">
+              The Algofi <span className="text-primary text-glow">Strategy Suite</span>
+            </h1>
+          </div>
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Six institutional-grade AI engines, one platform.
+          </p>
+        </div>
+
+        {/* Strategy Grid */}
+        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+          {strategies.map((strategy) => (
+            <GlassCard key={strategy.name} hover className="group flex flex-col">
+              <div className="flex items-start gap-4 mb-4">
+                <div className={`w-14 h-14 rounded-xl bg-gradient-to-br ${strategy.color} flex items-center justify-center shadow-lg`}>
+                  <strategy.icon className="w-7 h-7 text-background" />
+                </div>
+                <div>
+                  <h3 className="font-display font-bold text-xl">{strategy.name}</h3>
+                  <p className="text-sm text-muted-foreground">{strategy.tagline}</p>
+                </div>
+              </div>
+
+              <div className="space-y-3 flex-1">
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase mb-1">Asset Classes</p>
+                  <div className="flex flex-wrap gap-1">
+                    {strategy.assets.map((asset) => (
+                      <span key={asset} className="px-2 py-0.5 text-xs bg-muted rounded">
+                        {asset}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-muted-foreground" />
+                  <span className="text-sm">{strategy.holdingTime}</span>
+                </div>
+
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase mb-1">Primary Edge</p>
+                  <p className="text-sm font-medium">{strategy.edge}</p>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Shield className="w-4 h-4 text-muted-foreground" />
+                  <StatusBadge
+                    risk={
+                      strategy.risk === "conservative"
+                        ? "low"
+                        : strategy.risk === "balanced"
+                        ? "medium"
+                        : "high"
+                    }
+                    text={strategy.risk.charAt(0).toUpperCase() + strategy.risk.slice(1)}
+                  />
+                </div>
+
+                <div>
+                  <p className="text-xs text-muted-foreground uppercase mb-1">Typical Instruments</p>
+                  <div className="flex flex-wrap gap-1">
+                    {strategy.instruments.slice(0, 3).map((inst) => (
+                      <span key={inst} className="px-2 py-0.5 text-xs font-mono bg-secondary rounded">
+                        {inst}
+                      </span>
+                    ))}
+                    {strategy.instruments.length > 3 && (
+                      <span className="px-2 py-0.5 text-xs text-muted-foreground">
+                        +{strategy.instruments.length - 3}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <Link
+                to={strategy.path}
+                className="mt-6 flex items-center justify-center gap-2 py-3 rounded-lg border border-primary/30 text-primary font-medium hover:bg-primary/10 transition-all group-hover:gap-3"
+              >
+                View Strategy Room
+                <ArrowRight className="w-4 h-4" />
+              </Link>
+            </GlassCard>
+          ))}
+        </div>
+      </div>
+    </Layout>
+  );
+}

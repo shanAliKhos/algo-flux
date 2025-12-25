@@ -1,0 +1,21 @@
+import { Layout } from "@/components/layout/Layout";
+import { TradeHistoryLibrary } from "@/components/ui/TradeHistoryLibrary";
+import { BookOpen } from "lucide-react";
+
+export default function TradeLibrary() {
+  return (
+    <Layout>
+      <div className="min-h-screen p-6 lg:p-8 space-y-8">
+        <div className="text-center py-8">
+          <div className="inline-flex items-center gap-3 mb-4">
+            <BookOpen className="w-10 h-10 text-primary" />
+            <h1 className="font-display text-4xl lg:text-5xl font-bold">
+              Complete Trade <span className="text-primary text-glow">Library</span>
+            </h1>
+          </div>
+        </div>
+        <TradeHistoryLibrary />
+      </div>
+    </Layout>
+  );
+}

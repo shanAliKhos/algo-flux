@@ -1,0 +1,103 @@
+{
+  "forex": {
+    "majors": [
+      { "symbol": "EURUSD", "name": "Euro / US Dollar", "category": "Forex Major" },
+      { "symbol": "GBPUSD", "name": "British Pound / US Dollar", "category": "Forex Major" },
+      { "symbol": "USDJPY", "name": "US Dollar / Japanese Yen", "category": "Forex Major" },
+      { "symbol": "AUDUSD", "name": "Australian Dollar / US Dollar", "category": "Forex Major" },
+      { "symbol": "USDCAD", "name": "US Dollar / Canadian Dollar", "category": "Forex Major" },
+      { "symbol": "NZDUSD", "name": "New Zealand Dollar / US Dollar", "category": "Forex Major" },
+      { "symbol": "USDCHF", "name": "US Dollar / Swiss Franc", "category": "Forex Major" }
+    ],
+    "crosses": [
+      { "symbol": "EURGBP", "name": "Euro / British Pound", "category": "Forex Cross" },
+      { "symbol": "EURJPY", "name": "Euro / Japanese Yen", "category": "Forex Cross" },
+      { "symbol": "GBPJPY", "name": "British Pound / Japanese Yen", "category": "Forex Cross" },
+      { "symbol": "AUDJPY", "name": "Australian Dollar / Japanese Yen", "category": "Forex Cross" },
+      { "symbol": "EURAUD", "name": "Euro / Australian Dollar", "category": "Forex Cross" },
+      { "symbol": "EURCAD", "name": "Euro / Canadian Dollar", "category": "Forex Cross" },
+      { "symbol": "GBPAUD", "name": "British Pound / Australian Dollar", "category": "Forex Cross" },
+      { "symbol": "GBPCAD", "name": "British Pound / Canadian Dollar", "category": "Forex Cross" },
+      { "symbol": "AUDCAD", "name": "Australian Dollar / Canadian Dollar", "category": "Forex Cross" },
+      { "symbol": "AUDNZD", "name": "Australian Dollar / New Zealand Dollar", "category": "Forex Cross" }
+    ],
+    "exotic": [
+      { "symbol": "USDZAR", "name": "US Dollar / South African Rand", "category": "Forex Exotic" },
+      { "symbol": "USDTRY", "name": "US Dollar / Turkish Lira", "category": "Forex Exotic" },
+      { "symbol": "USDMXN", "name": "US Dollar / Mexican Peso", "category": "Forex Exotic" },
+      { "symbol": "USDSEK", "name": "US Dollar / Swedish Krona", "category": "Forex Exotic" },
+      { "symbol": "USDNOK", "name": "US Dollar / Norwegian Krone", "category": "Forex Exotic" }
+    ]
+  },
+  "crypto": {
+    "major": [
+      { "symbol": "BTCUSDT", "name": "Bitcoin / Tether", "category": "Crypto Major" },
+      { "symbol": "ETHUSDT", "name": "Ethereum / Tether", "category": "Crypto Major" },
+      { "symbol": "BNBUSDT", "name": "Binance Coin / Tether", "category": "Crypto Major" },
+      { "symbol": "SOLUSDT", "name": "Solana / Tether", "category": "Crypto Major" },
+      { "symbol": "XRPUSDT", "name": "Ripple / Tether", "category": "Crypto Major" },
+      { "symbol": "ADAUSDT", "name": "Cardano / Tether", "category": "Crypto Major" },
+      { "symbol": "DOGEUSDT", "name": "Dogecoin / Tether", "category": "Crypto Major" },
+      { "symbol": "DOTUSDT", "name": "Polkadot / Tether", "category": "Crypto Major" },
+      { "symbol": "MATICUSDT", "name": "Polygon / Tether", "category": "Crypto Major" },
+      { "symbol": "AVAXUSDT", "name": "Avalanche / Tether", "category": "Crypto Major" }
+    ],
+    "altcoins": [
+      { "symbol": "LINKUSDT", "name": "Chainlink / Tether", "category": "Crypto Altcoin" },
+      { "symbol": "UNIUSDT", "name": "Uniswap / Tether", "category": "Crypto Altcoin" },
+      { "symbol": "ATOMUSDT", "name": "Cosmos / Tether", "category": "Crypto Altcoin" },
+      { "symbol": "LTCUSDT", "name": "Litecoin / Tether", "category": "Crypto Altcoin" },
+      { "symbol": "ETCUSDT", "name": "Ethereum Classic / Tether", "category": "Crypto Altcoin" }
+    ]
+  },
+  "commodities": {
+    "metals": [
+      { "symbol": "XAUUSD", "name": "Gold / US Dollar", "category": "Commodity Metal" },
+      { "symbol": "XAGUSD", "name": "Silver / US Dollar", "category": "Commodity Metal" },
+      { "symbol": "XPTUSD", "name": "Platinum / US Dollar", "category": "Commodity Metal" },
+      { "symbol": "XPDUSD", "name": "Palladium / US Dollar", "category": "Commodity Metal" }
+    ],
+    "energy": [
+      { "symbol": "USOIL", "name": "Crude Oil WTI", "category": "Commodity Energy" },
+      { "symbol": "UKOIL", "name": "Brent Crude Oil", "category": "Commodity Energy" },
+      { "symbol": "NATGAS", "name": "Natural Gas", "category": "Commodity Energy" }
+    ]
+  },
+  "indices": [
+    { "symbol": "NAS100", "name": "NASDAQ 100", "category": "Index" },
+    { "symbol": "US30", "name": "Dow Jones 30", "category": "Index" },
+    { "symbol": "SPX500", "name": "S&P 500", "category": "Index" },
+    { "symbol": "UK100", "name": "FTSE 100", "category": "Index" },
+    { "symbol": "GER40", "name": "DAX 40", "category": "Index" },
+    { "symbol": "JPN225", "name": "Nikkei 225", "category": "Index" },
+    { "symbol": "AUS200", "name": "ASX 200", "category": "Index" },
+    { "symbol": "FRA40", "name": "CAC 40", "category": "Index" },
+    { "symbol": "ESP35", "name": "IBEX 35", "category": "Index" },
+    { "symbol": "ITA40", "name": "FTSE MIB", "category": "Index" }
+  ],
+  "stocks": {
+    "tech": [
+      { "symbol": "AAPL", "name": "Apple Inc.", "category": "Stock Tech" },
+      { "symbol": "MSFT", "name": "Microsoft Corporation", "category": "Stock Tech" },
+      { "symbol": "GOOGL", "name": "Alphabet Inc.", "category": "Stock Tech" },
+      { "symbol": "AMZN", "name": "Amazon.com Inc.", "category": "Stock Tech" },
+      { "symbol": "META", "name": "Meta Platforms Inc.", "category": "Stock Tech" },
+      { "symbol": "NVDA", "name": "NVIDIA Corporation", "category": "Stock Tech" },
+      { "symbol": "TSLA", "name": "Tesla Inc.", "category": "Stock Tech" },
+      { "symbol": "NFLX", "name": "Netflix Inc.", "category": "Stock Tech" }
+    ],
+    "finance": [
+      { "symbol": "JPM", "name": "JPMorgan Chase & Co.", "category": "Stock Finance" },
+      { "symbol": "BAC", "name": "Bank of America Corp.", "category": "Stock Finance" },
+      { "symbol": "GS", "name": "Goldman Sachs Group Inc.", "category": "Stock Finance" },
+      { "symbol": "MS", "name": "Morgan Stanley", "category": "Stock Finance" }
+    ],
+    "other": [
+      { "symbol": "WMT", "name": "Walmart Inc.", "category": "Stock Other" },
+      { "symbol": "JNJ", "name": "Johnson & Johnson", "category": "Stock Other" },
+      { "symbol": "V", "name": "Visa Inc.", "category": "Stock Other" },
+      { "symbol": "MA", "name": "Mastercard Inc.", "category": "Stock Other" }
+    ]
+  }
+}
+
