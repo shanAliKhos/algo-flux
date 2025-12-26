@@ -1,65 +1,115 @@
+import { useQuery } from "@tanstack/react-query";
 import { cn } from "@/lib/utils";
 import { 
   Activity, TrendingUp, Zap, Droplets, Newspaper, Clock,
-  Shield, Target, CheckCircle2, XCircle, AlertTriangle
+  Shield, Target, CheckCircle2, XCircle, AlertTriangle, Loader2
 } from "lucide-react";
+import { adminApi } from "@/lib/api";
+import type { LucideIcon } from "lucide-react";
 
 interface MarketConditionBoardProps {
   className?: string;
 }
 
+// Icon mapping from string names to icon components
+const iconMap: Record<string, LucideIcon> = {
+  Activity,
+  Clock,
+  TrendingUp,
+  Droplets,
+  Newspaper,
+  Zap,
+};
+
 export function MarketConditionBoard({ className }: MarketConditionBoardProps) {
-  const marketPersonality = [
-    { label: "Volatile", active: true, icon: Activity },
-    { label: "Slow", active: false, icon: Clock },
-    { label: "Ranging", active: false, icon: TrendingUp },
-    { label: "Trending", active: true, icon: TrendingUp },
-    { label: "Liquidity-heavy", active: true, icon: Droplets },
-    { label: "News-driven", active: false, icon: Newspaper },
-  ];
+  const { data, isLoading, error } = useQuery({
+    queryKey: ['conditions'],
+    queryFn: async () => {
+      try {
+        return await adminApi.getConditions();
+      } catch (error: any) {
+        // Return default data if API doesn't exist yet
+        if (error?.message?.includes('not found')) {
+          return {
+            marketPersonality: [
+              { label: "Volatile", active: true, icon: "Activity" },
+              { label: "Slow", active: false, icon: "Clock" },
+              { label: "Ranging", active: false, icon: "TrendingUp" },
+              { label: "Trending", active: true, icon: "TrendingUp" },
+              { label: "Liquidity-heavy", active: true, icon: "Droplets" },
+              { label: "News-driven", active: false, icon: "Newspaper" },
+            ],
+            behaviorMap: [
+              { asset: "Forex", behavior: "Risk-On", sentiment: 72 },
+              { asset: "Crypto", behavior: "Bullish", sentiment: 85 },
+              { asset: "Stocks", behavior: "Sector Rotation", sentiment: 58 },
+              { asset: "Gold", behavior: "Safe-Haven Mild", sentiment: 45 },
+              { asset: "Indices", behavior: "Volatility Spike", sentiment: 62 },
+            ],
+            strategyAlignment: [
+              { 
+                asset: "Forex",
+                strategies: [
+                  { name: "Nuvex", status: "active", opportunity: "high" },
+                  { name: "Drav", status: "active", opportunity: "medium" },
+                  { name: "Xylo", status: "disabled", opportunity: "low" },
+                ]
+              },
+              { 
+                asset: "Crypto",
+                strategies: [
+                  { name: "Tenzor", status: "active", opportunity: "high" },
+                  { name: "Omnix", status: "active", opportunity: "high" },
+                  { name: "Yark", status: "active", opportunity: "medium" },
+                ]
+              },
+              { 
+                asset: "Stocks",
+                strategies: [
+                  { name: "Yark", status: "active", opportunity: "high" },
+                  { name: "Omnix", status: "active", opportunity: "medium" },
+                  { name: "Tenzor", status: "disabled", opportunity: "low" },
+                ]
+              },
+              { 
+                asset: "Gold",
+                strategies: [
+                  { name: "Drav", status: "active", opportunity: "high" },
+                  { name: "Nuvex", status: "active", opportunity: "medium" },
+                  { name: "Xylo", status: "disabled", opportunity: "low" },
+                ]
+              },
+            ],
+          };
+        }
+        throw error;
+      }
+    },
+    refetchInterval: 30000,
+    refetchOnWindowFocus: true,
+    retry: 2,
+    staleTime: 5000,
+  });
 
-  const behaviorMap = [
-    { asset: "Forex", behavior: "Risk-On", sentiment: 72 },
-    { asset: "Crypto", behavior: "Bullish", sentiment: 85 },
-    { asset: "Stocks", behavior: "Sector Rotation", sentiment: 58 },
-    { asset: "Gold", behavior: "Safe-Haven Mild", sentiment: 45 },
-    { asset: "Indices", behavior: "Volatility Spike", sentiment: 62 },
-  ];
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <Loader2 className="w-8 h-8 animate-spin text-primary" />
+      </div>
+    );
+  }
 
-  const strategyAlignment = [
-    { 
-      asset: "Forex",
-      strategies: [
-        { name: "Nuvex", status: "active", opportunity: "high" },
-        { name: "Drav", status: "active", opportunity: "medium" },
-        { name: "Xylo", status: "disabled", opportunity: "low" },
-      ]
-    },
-    { 
-      asset: "Crypto",
-      strategies: [
-        { name: "Tenzor", status: "active", opportunity: "high" },
-        { name: "Omnix", status: "active", opportunity: "high" },
-        { name: "Yark", status: "active", opportunity: "medium" },
-      ]
-    },
-    { 
-      asset: "Stocks",
-      strategies: [
-        { name: "Yark", status: "active", opportunity: "high" },
-        { name: "Omnix", status: "active", opportunity: "medium" },
-        { name: "Tenzor", status: "disabled", opportunity: "low" },
-      ]
-    },
-    { 
-      asset: "Gold",
-      strategies: [
-        { name: "Drav", status: "active", opportunity: "high" },
-        { name: "Nuvex", status: "active", opportunity: "medium" },
-        { name: "Xylo", status: "disabled", opportunity: "low" },
-      ]
-    },
-  ];
+  if (error && !data) {
+    return (
+      <div className="text-center py-8 text-muted-foreground">
+        Failed to load market conditions data
+      </div>
+    );
+  }
+
+  const marketPersonality = data?.marketPersonality || [];
+  const behaviorMap = data?.behaviorMap || [];
+  const strategyAlignment = data?.strategyAlignment || [];
 
   return (
     <div className={cn("space-y-8", className)}>
@@ -67,7 +117,9 @@ export function MarketConditionBoard({ className }: MarketConditionBoardProps) {
       <div className="glass rounded-2xl p-6">
         <h3 className="font-display text-xl font-bold mb-6">Market Personality Today</h3>
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
-          {marketPersonality.map((item, i) => (
+          {marketPersonality.map((item, i) => {
+            const IconComponent = iconMap[item.icon] || Activity;
+            return (
             <div 
               key={i}
               className={cn(
@@ -81,7 +133,7 @@ export function MarketConditionBoard({ className }: MarketConditionBoardProps) {
                 "w-12 h-12 rounded-full flex items-center justify-center",
                 item.active ? "bg-primary/20" : "bg-muted"
               )}>
-                <item.icon className={cn(
+                <IconComponent className={cn(
                   "w-6 h-6",
                   item.active ? "text-primary" : "text-muted-foreground"
                 )} />
@@ -96,7 +148,8 @@ export function MarketConditionBoard({ className }: MarketConditionBoardProps) {
                 <span className="w-2 h-2 rounded-full bg-primary animate-pulse" />
               )}
             </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 

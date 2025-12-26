@@ -1,9 +1,11 @@
 import { cn } from "@/lib/utils";
 import { 
   Shield, TrendingUp, BarChart3, Activity, AlertTriangle,
-  CheckCircle2, Sliders, Download, FileText, Terminal,
-  Gauge, Target, PieChart, Zap, Settings, Eye
+  CheckCircle2, Sliders,
+  Gauge, Target, PieChart, Zap, Settings, Eye, Loader2
 } from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { adminApi } from "@/lib/api";
 
 type AccountType = "retail-small" | "pro-retail" | "investor" | "vip-ultra";
 
@@ -13,113 +15,190 @@ interface AccountTypeRoomProps {
 }
 
 export function AccountTypeRoom({ type, className }: AccountTypeRoomProps) {
-  const configs = {
-    "retail-small": {
-      title: "Retail Small Account",
-      subtitle: "Safety-First Trading • $100–$3,000",
-      color: "primary",
-      icon: Shield,
+  // Fetch account rooms data dynamically
+  const { data: accountRoomsData, error: accountRoomsError, isLoading, isFetching } = useQuery({
+    queryKey: ['account-rooms'],
+    queryFn: async () => {
+      try {
+        const data = await adminApi.getAccountRooms();
+        return data;
+      } catch (error) {
+        console.error('Error fetching account rooms data:', error);
+        return null;
+      }
     },
-    "pro-retail": {
-      title: "Pro Retail Account", 
-      subtitle: "Advanced Control • $5,000–$50,000",
-      color: "warning",
-      icon: BarChart3,
-    },
-    "investor": {
-      title: "Investor / Fund Account",
-      subtitle: "Institutional Reporting • $50,000–$1M+",
-      color: "primary",
-      icon: TrendingUp,
-    },
-    "vip-ultra": {
-      title: "VIP Ultra Account",
-      subtitle: "Full Transparency • $1M+",
-      color: "primary",
-      icon: Target,
+    refetchInterval: 30000, // Refetch every 30 seconds
+    retry: 1,
+    staleTime: 10000, // Consider data fresh for 10 seconds
+  });
+
+  // Log errors for debugging
+  if (accountRoomsError) {
+    console.error('Account rooms query error:', accountRoomsError);
+  }
+
+  // Get dynamic config from database or use defaults
+  const getConfig = () => {
+    const defaults = {
+      "retail-small": {
+        title: "Retail Small Account",
+        subtitle: "Safety-First Trading • $100–$3,000",
+        color: "primary",
+        icon: Shield,
+      },
+      "pro-retail": {
+        title: "Pro Retail Account", 
+        subtitle: "Advanced Control • $5,000–$50,000",
+        color: "warning",
+        icon: BarChart3,
+      },
+      "investor": {
+        title: "Investor / Fund Account",
+        subtitle: "Institutional Reporting • $50,000–$1M+",
+        color: "primary",
+        icon: TrendingUp,
+      },
+      "vip-ultra": {
+        title: "VIP Ultra Account",
+        subtitle: "Full Transparency • $1M+",
+        color: "primary",
+        icon: Target,
+      }
+    };
+
+    if (!accountRoomsData) return defaults[type];
+
+    switch (type) {
+      case "retail-small":
+        return {
+          ...defaults["retail-small"],
+          title: accountRoomsData.retailSmall?.title || defaults["retail-small"].title,
+          subtitle: accountRoomsData.retailSmall?.subtitle || defaults["retail-small"].subtitle,
+        };
+      case "pro-retail":
+        return {
+          ...defaults["pro-retail"],
+          title: accountRoomsData.proRetail?.title || defaults["pro-retail"].title,
+          subtitle: accountRoomsData.proRetail?.subtitle || defaults["pro-retail"].subtitle,
+        };
+      case "investor":
+        return {
+          ...defaults["investor"],
+          title: accountRoomsData.investor?.title || defaults["investor"].title,
+          subtitle: accountRoomsData.investor?.subtitle || defaults["investor"].subtitle,
+        };
+      case "vip-ultra":
+        return {
+          ...defaults["vip-ultra"],
+          title: accountRoomsData.vipUltra?.title || defaults["vip-ultra"].title,
+          subtitle: accountRoomsData.vipUltra?.subtitle || defaults["vip-ultra"].subtitle,
+        };
+      default:
+        return defaults[type];
     }
   };
 
-  const config = configs[type];
+  const config = getConfig();
 
-  const renderRetailSmall = () => (
-    <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-      {/* Safe Mode */}
-      <div className="glass rounded-xl p-4">
-        <div className="flex items-center justify-between mb-3">
-          <span className="text-sm text-muted-foreground">Safe Mode</span>
-          <span className="flex items-center gap-2 text-primary">
-            <CheckCircle2 className="w-4 h-4" />
-            Active
-          </span>
-        </div>
-        <div className="text-xs text-muted-foreground">
-          All trades filtered through maximum safety protocols
-        </div>
-      </div>
+  const renderRetailSmall = () => {
+    const data = accountRoomsData?.retailSmall;
+    const dailyRiskUsed = data?.dailyRiskUsed || 35;
+    const maxDrawdown = data?.maxDrawdown || -5;
+    const currentDrawdown = data?.currentDrawdown || -1.2;
+    const leverageMode = data?.leverageMode || "Low: 1:10";
+    const recentSignals = data?.recentSignals || [
+      { emoji: "✅", text: "XAUUSD buy closed +$45" },
+      { emoji: "⏳", text: "BTCUSDT watching..." },
+      { emoji: "🛡️", text: "Risk limit: OK" },
+    ];
+    const safetyReasons = data?.safetyReasons || [
+      "Low volatility environment",
+      "Strong trend confirmation",
+      "Risk only 0.5% of account",
+      "Clear stop loss defined",
+    ];
+    const safeModeActive = data?.safeMode?.active ?? true;
+    const safeModeDescription = data?.safeMode?.description || "All trades filtered through maximum safety protocols";
 
-      {/* Daily Risk Meter */}
-      <div className="glass rounded-xl p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Gauge className="w-4 h-4 text-primary" />
-          <span className="text-sm">Daily Risk Used</span>
-        </div>
-        <div className="flex items-center gap-3">
-          <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
-            <div className="h-full bg-primary rounded-full" style={{ width: "35%" }} />
+    return (
+      <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+        {/* Safe Mode */}
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-sm text-muted-foreground">Safe Mode</span>
+            {safeModeActive && (
+              <span className="flex items-center gap-2 text-primary">
+                <CheckCircle2 className="w-4 h-4" />
+                Active
+              </span>
+            )}
           </div>
-          <span className="text-sm font-mono">35%</span>
+          <div className="text-xs text-muted-foreground">
+            {safeModeDescription}
+          </div>
         </div>
-      </div>
 
-      {/* Simple Signals */}
-      <div className="glass rounded-xl p-4">
-        <div className="text-sm text-muted-foreground mb-3">Recent Signals</div>
-        <div className="space-y-2">
-          {[
-            { emoji: "✅", text: "XAUUSD buy closed +$45" },
-            { emoji: "⏳", text: "BTCUSDT watching..." },
-            { emoji: "🛡️", text: "Risk limit: OK" },
-          ].map((item, i) => (
-            <div key={i} className="flex items-center gap-2 text-sm">
-              <span>{item.emoji}</span>
-              <span>{item.text}</span>
+        {/* Daily Risk Meter */}
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Gauge className="w-4 h-4 text-primary" />
+            <span className="text-sm">Daily Risk Used</span>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex-1 h-3 bg-muted rounded-full overflow-hidden">
+              <div className="h-full bg-primary rounded-full" style={{ width: `${dailyRiskUsed}%` }} />
             </div>
-          ))}
+            <span className="text-sm font-mono">{dailyRiskUsed}%</span>
+          </div>
+        </div>
+
+        {/* Simple Signals */}
+        <div className="glass rounded-xl p-4">
+          <div className="text-sm text-muted-foreground mb-3">Recent Signals</div>
+          <div className="space-y-2">
+            {recentSignals.map((item, i) => {
+              if (!item) return null;
+              return (
+                <div key={i} className="flex items-center gap-2 text-sm">
+                  <span>{item.emoji || ""}</span>
+                  <span>{item.text || ""}</span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        {/* Why Safe */}
+        <div className="glass rounded-xl p-4 md:col-span-2 lg:col-span-1">
+          <div className="flex items-center gap-2 mb-3">
+            <Shield className="w-4 h-4 text-primary" />
+            <span className="text-sm">Why This Trade Was Safe</span>
+          </div>
+          <ul className="text-xs text-muted-foreground space-y-1">
+            {safetyReasons.filter(Boolean).map((reason, i) => (
+              <li key={i}>• {reason}</li>
+            ))}
+          </ul>
+        </div>
+
+        {/* Max DD Protection */}
+        <div className="glass rounded-xl p-4">
+          <div className="text-sm text-muted-foreground mb-2">Max Drawdown Protection</div>
+          <div className="text-2xl font-bold text-primary">{maxDrawdown}% max</div>
+          <div className="text-xs text-muted-foreground mt-1">Currently at {currentDrawdown}%</div>
+        </div>
+
+        {/* Low Leverage */}
+        <div className="glass rounded-xl p-4">
+          <div className="text-sm text-muted-foreground mb-2">Leverage Mode</div>
+          <div className="flex items-center gap-2">
+            <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">{leverageMode}</span>
+            <span className="text-xs text-muted-foreground">Protected</span>
+          </div>
         </div>
       </div>
-
-      {/* Why Safe */}
-      <div className="glass rounded-xl p-4 md:col-span-2 lg:col-span-1">
-        <div className="flex items-center gap-2 mb-3">
-          <Shield className="w-4 h-4 text-primary" />
-          <span className="text-sm">Why This Trade Was Safe</span>
-        </div>
-        <ul className="text-xs text-muted-foreground space-y-1">
-          <li>• Low volatility environment</li>
-          <li>• Strong trend confirmation</li>
-          <li>• Risk only 0.5% of account</li>
-          <li>• Clear stop loss defined</li>
-        </ul>
-      </div>
-
-      {/* Max DD Protection */}
-      <div className="glass rounded-xl p-4">
-        <div className="text-sm text-muted-foreground mb-2">Max Drawdown Protection</div>
-        <div className="text-2xl font-bold text-primary">-5% max</div>
-        <div className="text-xs text-muted-foreground mt-1">Currently at -1.2%</div>
-      </div>
-
-      {/* Low Leverage */}
-      <div className="glass rounded-xl p-4">
-        <div className="text-sm text-muted-foreground mb-2">Leverage Mode</div>
-        <div className="flex items-center gap-2">
-          <span className="px-3 py-1 rounded-full bg-primary/10 text-primary text-sm">Low: 1:10</span>
-          <span className="text-xs text-muted-foreground">Protected</span>
-        </div>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const renderProRetail = () => (
     <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -127,20 +206,23 @@ export function AccountTypeRoom({ type, className }: AccountTypeRoomProps) {
       <div className="glass rounded-xl p-4">
         <div className="text-sm text-muted-foreground mb-3">Strategy Utilization</div>
         <div className="space-y-2">
-          {[
-            { name: "Nuvex", pct: 35 },
-            { name: "Drav", pct: 28 },
-            { name: "Tenzor", pct: 22 },
-            { name: "Others", pct: 15 },
-          ].map((s, i) => (
-            <div key={i} className="flex items-center gap-2">
-              <span className="text-xs w-16">{s.name}</span>
-              <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
-                <div className="h-full bg-primary" style={{ width: `${s.pct}%` }} />
+          {(accountRoomsData?.proRetail?.strategyUtilization || [
+            { name: "Nuvex", percentage: 35 },
+            { name: "Drav", percentage: 28 },
+            { name: "Tenzor", percentage: 22 },
+            { name: "Others", percentage: 15 },
+          ]).map((s, i) => {
+            const percentage = s.percentage ?? 0;
+            return (
+              <div key={i} className="flex items-center gap-2">
+                <span className="text-xs w-16">{s.name || "Unknown"}</span>
+                <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden">
+                  <div className="h-full bg-primary" style={{ width: `${percentage}%` }} />
+                </div>
+                <span className="text-xs font-mono w-8">{percentage}%</span>
               </div>
-              <span className="text-xs font-mono w-8">{s.pct}%</span>
-            </div>
-          ))}
+            );
+          })}
         </div>
       </div>
 
@@ -150,7 +232,9 @@ export function AccountTypeRoom({ type, className }: AccountTypeRoomProps) {
           <Zap className="w-4 h-4 text-warning" />
           <span className="text-sm">Execution Quality</span>
         </div>
-        <div className="text-3xl font-bold text-warning">94.2</div>
+        <div className="text-3xl font-bold text-warning">
+          {accountRoomsData?.proRetail?.executionQuality || 94.2}
+        </div>
         <div className="text-xs text-muted-foreground">Out of 100 • Excellent</div>
       </div>
 
@@ -158,8 +242,12 @@ export function AccountTypeRoom({ type, className }: AccountTypeRoomProps) {
       <div className="glass rounded-xl p-4">
         <div className="text-sm text-muted-foreground mb-3">Market Regime</div>
         <div className="px-3 py-2 rounded-lg bg-primary/10 border border-primary/20 text-center">
-          <div className="text-primary font-medium">Trending + Risk-On</div>
-          <div className="text-xs text-muted-foreground mt-1">Favoring momentum strategies</div>
+          <div className="text-primary font-medium">
+            {accountRoomsData?.proRetail?.marketRegime?.type || "Trending + Risk-On"}
+          </div>
+          <div className="text-xs text-muted-foreground mt-1">
+            {accountRoomsData?.proRetail?.marketRegime?.description || "Favoring momentum strategies"}
+          </div>
         </div>
       </div>
 
@@ -167,17 +255,30 @@ export function AccountTypeRoom({ type, className }: AccountTypeRoomProps) {
       <div className="glass rounded-xl p-4 md:col-span-2">
         <div className="text-sm text-muted-foreground mb-3">Opportunity Heatmap</div>
         <div className="grid grid-cols-4 gap-2">
-          {["XAUUSD", "BTCUSDT", "NAS100", "EURUSD", "TSLA", "AAPL", "ETH", "GBPJPY"].map((sym, i) => (
-            <div 
-              key={i}
-              className={cn(
-                "p-2 rounded text-center text-xs",
-                i < 3 ? "bg-primary/30 text-primary" : "bg-muted text-muted-foreground"
-              )}
-            >
-              {sym}
-            </div>
-          ))}
+          {(accountRoomsData?.proRetail?.opportunityHeatmap || [
+            { symbol: "XAUUSD", active: true },
+            { symbol: "BTCUSDT", active: true },
+            { symbol: "NAS100", active: true },
+            { symbol: "EURUSD", active: true },
+            { symbol: "TSLA", active: false },
+            { symbol: "AAPL", active: false },
+            { symbol: "ETH", active: false },
+            { symbol: "GBPJPY", active: false },
+          ]).map((item, i) => {
+            if (!item || !item.symbol) return null;
+            const isActive = item.active === true;
+            return (
+              <div 
+                key={i}
+                className={cn(
+                  "p-2 rounded text-center text-xs",
+                  isActive ? "bg-primary/30 text-primary" : "bg-muted text-muted-foreground"
+                )}
+              >
+                {item.symbol}
+              </div>
+            );
+          })}
         </div>
       </div>
 
@@ -185,133 +286,163 @@ export function AccountTypeRoom({ type, className }: AccountTypeRoomProps) {
       <div className="glass rounded-xl p-4">
         <div className="text-sm text-muted-foreground mb-3">Strategy Confidence</div>
         <div className="space-y-1">
-          {[
-            { name: "Drav", conf: "High" },
-            { name: "Tenzor", conf: "High" },
-            { name: "Nuvex", conf: "Medium" },
-          ].map((s, i) => (
-            <div key={i} className="flex justify-between text-xs">
-              <span>{s.name}</span>
-              <span className={s.conf === "High" ? "text-primary" : "text-warning"}>{s.conf}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-
-  const renderInvestor = () => (
-    <div className="space-y-6">
-      {/* Equity Curve */}
-      <div className="glass rounded-xl p-6">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <div className="text-sm text-muted-foreground">Multi-Month Equity Curve</div>
-            <div className="text-2xl font-bold text-primary">+24.7% YTD</div>
-          </div>
-          <div className="flex gap-2">
-            {["1M", "3M", "6M", "YTD"].map((p, i) => (
-              <button 
-                key={i}
-                className={cn(
-                  "px-3 py-1 rounded text-xs",
-                  i === 3 ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                )}
-              >
-                {p}
-              </button>
-            ))}
-          </div>
-        </div>
-        <div className="h-32 bg-card rounded-lg border border-border flex items-end p-2">
-          {[45, 52, 48, 58, 55, 62, 68, 65, 72, 78, 75, 82].map((h, i) => (
-            <div key={i} className="flex-1 mx-0.5">
-              <div 
-                className="bg-primary/60 rounded-t"
-                style={{ height: `${h}%` }}
-              />
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <div className="grid md:grid-cols-3 gap-4">
-        {/* DD Zones */}
-        <div className="glass rounded-xl p-4">
-          <div className="text-sm text-muted-foreground mb-3">Drawdown Zones</div>
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span>Max DD</span>
-              <span className="text-destructive">-8.4%</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span>Current DD</span>
-              <span className="text-warning">-2.1%</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span>Avg Recovery</span>
-              <span className="text-primary">12 days</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Vol-Adjusted Returns */}
-        <div className="glass rounded-xl p-4">
-          <div className="text-sm text-muted-foreground mb-3">Risk-Adjusted Metrics</div>
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span>Sharpe Ratio</span>
-              <span className="text-primary">1.82</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span>Sortino Ratio</span>
-              <span className="text-primary">2.14</span>
-            </div>
-            <div className="flex justify-between text-xs">
-              <span>Calmar Ratio</span>
-              <span className="text-primary">2.94</span>
-            </div>
-          </div>
-        </div>
-
-        {/* Alpha Sources */}
-        <div className="glass rounded-xl p-4">
-          <div className="text-sm text-muted-foreground mb-3">Alpha Sources</div>
-          <div className="space-y-2">
-            {[
-              { name: "Momentum", pct: 38 },
-              { name: "Mean Reversion", pct: 28 },
-              { name: "SMC/Liquidity", pct: 22 },
-              { name: "Statistical Arb", pct: 12 },
-            ].map((a, i) => (
-              <div key={i} className="flex items-center gap-2">
-                <span className="text-xs w-24">{a.name}</span>
-                <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
-                  <div className="h-full bg-primary" style={{ width: `${a.pct}%` }} />
-                </div>
+          {(accountRoomsData?.proRetail?.strategyConfidence || [
+            { name: "Drav", confidence: "High" },
+            { name: "Tenzor", confidence: "High" },
+            { name: "Nuvex", confidence: "Medium" },
+          ]).map((s, i) => {
+            if (!s || !s.name) return null;
+            const confidence = s.confidence || "Low";
+            return (
+              <div key={i} className="flex justify-between text-xs">
+                <span>{s.name}</span>
+                <span className={confidence === "High" ? "text-primary" : confidence === "Medium" ? "text-warning" : "text-muted-foreground"}>
+                  {confidence}
+                </span>
               </div>
-            ))}
-          </div>
+            );
+          })}
         </div>
-      </div>
-
-      {/* Action Buttons */}
-      <div className="flex flex-wrap gap-3">
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors">
-          <Download className="w-4 h-4" />
-          Export Monthly Report
-        </button>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-border hover:border-primary/30 transition-colors">
-          <FileText className="w-4 h-4" />
-          View Trade Book
-        </button>
-        <button className="flex items-center gap-2 px-4 py-2 rounded-lg bg-card border border-border hover:border-primary/30 transition-colors">
-          <Terminal className="w-4 h-4" />
-          View System Logs
-        </button>
       </div>
     </div>
   );
+
+  const renderInvestor = () => {
+    const data = accountRoomsData?.investor;
+    
+    // Always provide fallback values to ensure something is displayed
+    const defaultDataPoints = [45, 52, 48, 58, 55, 62, 68, 65, 72, 78, 75, 82];
+    const defaultAlphaSources = [
+      { name: "Momentum", percentage: 38 },
+      { name: "Mean Reversion", percentage: 28 },
+      { name: "SMC/Liquidity", percentage: 22 },
+      { name: "Statistical Arb", percentage: 12 },
+    ];
+    
+    const ytdReturn = data?.equityCurve?.ytdReturn ?? 24.7;
+    const dataPoints = (data?.equityCurve?.dataPoints && Array.isArray(data.equityCurve.dataPoints) && data.equityCurve.dataPoints.length > 0)
+      ? data.equityCurve.dataPoints 
+      : defaultDataPoints;
+    const maxDrawdown = data?.drawdownZones?.maxDrawdown ?? -8.4;
+    const currentDrawdown = data?.drawdownZones?.currentDrawdown ?? -2.1;
+    const avgRecovery = data?.drawdownZones?.avgRecovery ?? 12;
+    const sharpeRatio = data?.riskAdjustedMetrics?.sharpeRatio ?? 1.82;
+    const sortinoRatio = data?.riskAdjustedMetrics?.sortinoRatio ?? 2.14;
+    const calmarRatio = data?.riskAdjustedMetrics?.calmarRatio ?? 2.94;
+    const alphaSources = (data?.alphaSources && Array.isArray(data.alphaSources) && data.alphaSources.length > 0)
+      ? data.alphaSources
+      : defaultAlphaSources;
+
+    return (
+      <div className="space-y-6">
+        {/* Equity Curve */}
+        <div className="glass rounded-xl p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <div className="text-sm text-muted-foreground">Multi-Month Equity Curve</div>
+              <div className="text-2xl font-bold text-primary">+{ytdReturn.toFixed(1)}% YTD</div>
+            </div>
+          </div>
+          <div className="h-32 bg-card rounded-lg border border-border flex items-end p-2 gap-0.5 relative">
+            {isFetching && (
+              <div className="absolute inset-0 flex items-center justify-center bg-card/50 backdrop-blur-sm z-10">
+                <Loader2 className="w-4 h-4 animate-spin text-primary" />
+              </div>
+            )}
+            {dataPoints && dataPoints.length > 0 ? (
+              dataPoints.map((h, i) => {
+                const height = Math.max(0, Math.min(100, Number(h) || 0)); // Clamp between 0-100
+                return (
+                  <div key={`chart-bar-${i}-${h}`} className="flex-1 flex items-end min-w-0 h-full">
+                    <div 
+                      className="bg-primary rounded-t w-full transition-all duration-300 hover:bg-primary/90"
+                      style={{ 
+                        height: `${height}%`, 
+                        minHeight: height > 0 ? '4px' : '0px',
+                        width: '100%',
+                        opacity: height > 0 ? 0.7 : 0.3
+                      }}
+                      title={`Point ${i + 1}: ${height.toFixed(1)}%`}
+                    />
+                  </div>
+                );
+              })
+            ) : (
+              <div className="w-full h-full flex items-center justify-center text-muted-foreground text-sm">
+                {isLoading ? 'Loading chart data...' : 'No chart data available'}
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-4">
+          {/* DD Zones */}
+          <div className="glass rounded-xl p-4">
+            <div className="text-sm text-muted-foreground mb-3">Drawdown Zones</div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs">
+                <span>Max DD</span>
+                <span className="text-destructive">{maxDrawdown}%</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span>Current DD</span>
+                <span className="text-warning">{currentDrawdown}%</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span>Avg Recovery</span>
+                <span className="text-primary">{avgRecovery} days</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Vol-Adjusted Returns */}
+          <div className="glass rounded-xl p-4">
+            <div className="text-sm text-muted-foreground mb-3">Risk-Adjusted Metrics</div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs">
+                <span>Sharpe Ratio</span>
+                <span className="text-primary">{sharpeRatio.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span>Sortino Ratio</span>
+                <span className="text-primary">{sortinoRatio.toFixed(2)}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span>Calmar Ratio</span>
+                <span className="text-primary">{calmarRatio.toFixed(2)}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Alpha Sources */}
+          <div className="glass rounded-xl p-4">
+            <div className="text-sm text-muted-foreground mb-3">Alpha Sources</div>
+            <div className="space-y-2">
+              {alphaSources && alphaSources.length > 0 ? (
+                alphaSources.filter(a => a && a.name).map((a, i) => {
+                  const percentage = Math.max(0, Math.min(100, a.percentage ?? 0)); // Clamp between 0-100
+                  return (
+                    <div key={`alpha-${i}-${a.name}`} className="flex items-center gap-2">
+                      <span className="text-xs w-24 truncate">{a.name}</span>
+                      <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-primary transition-all duration-300" 
+                          style={{ width: `${percentage}%` }} 
+                        />
+                      </div>
+                      <span className="text-xs text-muted-foreground w-10 text-right">{percentage.toFixed(0)}%</span>
+                    </div>
+                  );
+                })
+              ) : (
+                <div className="text-xs text-muted-foreground">No alpha sources configured</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
 
   const renderVipUltra = () => (
     <div className="space-y-6">
@@ -427,6 +558,18 @@ export function AccountTypeRoom({ type, className }: AccountTypeRoomProps) {
     </div>
   );
 
+  // Show loading state only on initial load, not on refetch
+  if (isLoading && !accountRoomsData) {
+    return (
+      <div className={cn("flex items-center justify-center min-h-[200px]", className)}>
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin text-primary mx-auto mb-2" />
+          <p className="text-sm text-muted-foreground">Loading account data...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className={cn("", className)}>
       <div className="flex items-center gap-4 mb-6">
@@ -439,8 +582,13 @@ export function AccountTypeRoom({ type, className }: AccountTypeRoomProps) {
             config.color === "warning" ? "text-warning" : "text-primary"
           )} />
         </div>
-        <div>
-          <h3 className="font-display text-2xl font-bold">{config.title}</h3>
+        <div className="flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="font-display text-2xl font-bold">{config.title}</h3>
+            {isFetching && !isLoading && (
+              <Loader2 className="w-4 h-4 animate-spin text-muted-foreground" title="Updating data..." />
+            )}
+          </div>
           <p className="text-muted-foreground">{config.subtitle}</p>
         </div>
       </div>

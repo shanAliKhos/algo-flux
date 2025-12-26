@@ -11,6 +11,11 @@ import { MarketBrainDto } from './dto/market-brain.dto';
 import { PerformanceDto } from './dto/performance.dto';
 import { StrategyItemDto } from './dto/strategies.dto';
 import { TradeFormationDto } from './dto/trade-formation.dto';
+import { AccountRoomsDto } from './dto/account-rooms.dto';
+import { RadarDto } from './dto/radar.dto';
+import { AuditDto } from './dto/audit.dto';
+import { ConditionsDto } from './dto/conditions.dto';
+import { ExecutionDto } from './dto/execution.dto';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -102,6 +107,81 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Trade Formation data updated successfully' })
   updateTradeFormation(@Body() tradeFormationDto: TradeFormationDto) {
     return this.adminService.updateTradeFormation(tradeFormationDto);
+  }
+
+  @Public()
+  @Get('account-rooms')
+  @ApiOperation({ summary: 'Get Account Rooms data (Public)' })
+  @ApiResponse({ status: 200, description: 'Account Rooms data retrieved successfully' })
+  getAccountRooms() {
+    return this.adminService.getAccountRooms();
+  }
+
+  @Post('account-rooms')
+  @ApiOperation({ summary: 'Update Account Rooms data' })
+  @ApiResponse({ status: 200, description: 'Account Rooms data updated successfully' })
+  updateAccountRooms(@Body(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true })) accountRoomsDto: AccountRoomsDto) {
+    return this.adminService.updateAccountRooms(accountRoomsDto);
+  }
+
+  @Public()
+  @Get('conditions')
+  @ApiOperation({ summary: 'Get Conditions data (Public)' })
+  @ApiResponse({ status: 200, description: 'Conditions data retrieved successfully' })
+  getConditions() {
+    return this.adminService.getConditions();
+  }
+
+  @Post('conditions')
+  @ApiOperation({ summary: 'Update Conditions data' })
+  @ApiResponse({ status: 200, description: 'Conditions data updated successfully' })
+  updateConditions(@Body(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true })) conditionsDto: ConditionsDto) {
+    return this.adminService.updateConditions(conditionsDto);
+  }
+
+  @Public()
+  @Get('execution')
+  @ApiOperation({ summary: 'Get Execution data (Public)' })
+  @ApiResponse({ status: 200, description: 'Execution data retrieved successfully' })
+  getExecution() {
+    return this.adminService.getExecution();
+  }
+
+  @Post('execution')
+  @ApiOperation({ summary: 'Update Execution data' })
+  @ApiResponse({ status: 200, description: 'Execution data updated successfully' })
+  updateExecution(@Body(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true })) executionDto: ExecutionDto) {
+    return this.adminService.updateExecution(executionDto);
+  }
+
+  @Public()
+  @Get('audit')
+  @ApiOperation({ summary: 'Get Audit data (Public)' })
+  @ApiResponse({ status: 200, description: 'Audit data retrieved successfully' })
+  getAudit() {
+    return this.adminService.getAudit();
+  }
+
+  @Post('audit')
+  @ApiOperation({ summary: 'Update Audit data' })
+  @ApiResponse({ status: 200, description: 'Audit data updated successfully' })
+  updateAudit(@Body(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true })) auditDto: AuditDto) {
+    return this.adminService.updateAudit(auditDto);
+  }
+
+  @Public()
+  @Get('radar')
+  @ApiOperation({ summary: 'Get Radar data (Public)' })
+  @ApiResponse({ status: 200, description: 'Radar data retrieved successfully' })
+  getRadar() {
+    return this.adminService.getRadar();
+  }
+
+  @Post('radar')
+  @ApiOperation({ summary: 'Update Radar data' })
+  @ApiResponse({ status: 200, description: 'Radar data updated successfully' })
+  updateRadar(@Body(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true })) radarDto: RadarDto) {
+    return this.adminService.updateRadar(radarDto);
   }
 }
 

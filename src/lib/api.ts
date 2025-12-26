@@ -393,4 +393,323 @@ export const adminApi = {
       notes: string;
     };
   }) => apiClient.post('/admin/trade-formation', data),
+  getAccountRooms: () =>
+    apiClient.get<{
+      retailSmall: {
+        title: string;
+        subtitle: string;
+        safeMode: {
+          active: boolean;
+          description: string;
+        };
+        dailyRiskUsed: number;
+        maxDrawdown: number;
+        currentDrawdown: number;
+        leverageMode: string;
+        recentSignals: Array<{
+          emoji: string;
+          text: string;
+        }>;
+        safetyReasons: string[];
+      };
+      proRetail: {
+        title: string;
+        subtitle: string;
+        strategyUtilization: Array<{
+          name: string;
+          percentage: number;
+        }>;
+        executionQuality: number;
+        marketRegime: {
+          type: string;
+          description: string;
+        };
+        opportunityHeatmap: Array<{
+          symbol: string;
+          active: boolean;
+        }>;
+        strategyConfidence: Array<{
+          name: string;
+          confidence: string;
+        }>;
+      };
+      investor: {
+        title: string;
+        subtitle: string;
+        equityCurve: {
+          ytdReturn: number;
+          dataPoints: number[];
+        };
+        drawdownZones: {
+          maxDrawdown: number;
+          currentDrawdown: number;
+          avgRecovery: number;
+        };
+        riskAdjustedMetrics: {
+          sharpeRatio: number;
+          sortinoRatio: number;
+          calmarRatio: number;
+        };
+        alphaSources: Array<{
+          name: string;
+          percentage: number;
+        }>;
+      };
+      vipUltra: {
+        title: string;
+        subtitle: string;
+        fullTransparency: {
+          enabled: boolean;
+          features: string[];
+        };
+        realTimeData: {
+          enabled: boolean;
+          latency: number;
+        };
+        advancedMetrics: {
+          enabled: boolean;
+          metrics: string[];
+        };
+        customReporting: {
+          enabled: boolean;
+          formats: string[];
+        };
+      };
+    }>('/admin/account-rooms', true), // Skip auth for public endpoint
+  updateAccountRooms: (data: {
+    retailSmall: {
+      title: string;
+      subtitle: string;
+      safeMode: {
+        active: boolean;
+        description: string;
+      };
+      dailyRiskUsed: number;
+      maxDrawdown: number;
+      currentDrawdown: number;
+      leverageMode: string;
+      recentSignals: Array<{
+        emoji: string;
+        text: string;
+      }>;
+      safetyReasons: string[];
+    };
+    proRetail: {
+      title: string;
+      subtitle: string;
+      strategyUtilization: Array<{
+        name: string;
+        percentage: number;
+      }>;
+      executionQuality: number;
+      marketRegime: {
+        type: string;
+        description: string;
+      };
+      opportunityHeatmap: string[];
+      strategyConfidence: Array<{
+        name: string;
+        confidence: string;
+      }>;
+    };
+    investor: {
+      title: string;
+      subtitle: string;
+      equityCurve: {
+        ytdReturn: number;
+        dataPoints: number[];
+      };
+      drawdownZones: {
+        maxDrawdown: number;
+        currentDrawdown: number;
+        avgRecovery: number;
+      };
+      riskAdjustedMetrics: {
+        sharpeRatio: number;
+        sortinoRatio: number;
+        calmarRatio: number;
+      };
+      alphaSources: Array<{
+        name: string;
+        percentage: number;
+      }>;
+    };
+    vipUltra: {
+      title: string;
+      subtitle: string;
+      fullTransparency: {
+        enabled: boolean;
+        features: string[];
+      };
+      realTimeData: {
+        enabled: boolean;
+        latency: number;
+      };
+      advancedMetrics: {
+        enabled: boolean;
+        metrics: string[];
+      };
+      customReporting: {
+        enabled: boolean;
+        formats: string[];
+      };
+    };
+  }) => apiClient.post('/admin/account-rooms', data),
+  getRadar: () =>
+    apiClient.get<{
+      assetClasses: Array<{
+        label: string;
+        value: number;
+        sublabel: string;
+      }>;
+      opportunities: Array<{
+        symbol: string;
+        price: string;
+        change: number;
+        strategy: string;
+        signal: 'In Position' | 'Preparing Entry' | 'Watching';
+      }>;
+      regimes: Array<{
+        name: string;
+        description: string;
+      }>;
+    }>('/admin/radar', true), // Skip auth for public endpoint
+  updateRadar: (data: {
+    assetClasses: Array<{
+      label: string;
+      value: number;
+      sublabel: string;
+    }>;
+    opportunities: Array<{
+      symbol: string;
+      price: string;
+      change: number;
+      strategy: string;
+      signal: 'In Position' | 'Preparing Entry' | 'Watching';
+    }>;
+    regimes: Array<{
+      name: string;
+      description: string;
+    }>;
+  }) => apiClient.post('/admin/radar', data),
+  getAudit: () =>
+    apiClient.get<{
+      recentExecutions: Array<{
+        time: string;
+        strategy: string;
+        symbol: string;
+        direction: string;
+        size: string;
+        price: string;
+        status: string;
+      }>;
+      performanceByStrategy: Array<{
+        name: string;
+        winRate: number;
+        avgR: number;
+        trades: number;
+        pnl: string;
+      }>;
+      riskMetrics: Array<{
+        label: string;
+        value: string;
+        status: string;
+      }>;
+      anomalies: Array<{
+        time: string;
+        type: string;
+        asset: string;
+        severity: string;
+      }>;
+      dailyAccuracy: Array<{
+        day: string;
+        accuracy: number;
+      }>;
+      complianceLogs: {
+        riskCompliance: string;
+        policyViolations: number;
+        systemUptime: string;
+        avgLatency: string;
+      };
+    }>('/admin/audit', true), // Skip auth for public endpoint
+  updateAudit: (data: {
+    recentExecutions: Array<{
+      time: string;
+      strategy: string;
+      symbol: string;
+      direction: string;
+      size: string;
+      price: string;
+      status: string;
+    }>;
+    performanceByStrategy: Array<{
+      name: string;
+      winRate: number;
+      avgR: number;
+      trades: number;
+      pnl: string;
+    }>;
+    riskMetrics: Array<{
+      label: string;
+      value: string;
+      status: string;
+    }>;
+    anomalies: Array<{
+      time: string;
+      type: string;
+      asset: string;
+      severity: string;
+    }>;
+    dailyAccuracy: Array<{
+      day: string;
+      accuracy: number;
+    }>;
+    complianceLogs: {
+      riskCompliance: string;
+      policyViolations: number;
+      systemUptime: string;
+      avgLatency: string;
+    };
+  }) => apiClient.post('/admin/audit', data),
+  getConditions: () =>
+    apiClient.get<{
+      marketPersonality: Array<{
+        label: string;
+        active: boolean;
+        icon: string;
+      }>;
+      behaviorMap: Array<{
+        asset: string;
+        behavior: string;
+        sentiment: number;
+      }>;
+      strategyAlignment: Array<{
+        asset: string;
+        strategies: Array<{
+          name: string;
+          status: string;
+          opportunity: string;
+        }>;
+      }>;
+    }>('/admin/conditions', true), // Skip auth for public endpoint
+  updateConditions: (data: {
+    marketPersonality: Array<{
+      label: string;
+      active: boolean;
+      icon: string;
+    }>;
+    behaviorMap: Array<{
+      asset: string;
+      behavior: string;
+      sentiment: number;
+    }>;
+    strategyAlignment: Array<{
+      asset: string;
+      strategies: Array<{
+        name: string;
+        status: string;
+        opportunity: string;
+      }>;
+    }>;
+  }) => apiClient.post('/admin/conditions', data),
 };
