@@ -156,6 +156,7 @@ export class AdminService {
       dataPointsPerSecond: aiBrain.dataPointsPerSecond,
     };
   }
+  
 
   async getMarketBrain() {
     let marketBrain = await this.marketBrainModel.findOne({ key: 'default' }).exec();
@@ -428,10 +429,46 @@ export class AdminService {
   }
 
   async getAudit() {
+    // Calculate daily accuracy dynamically from trade records (always)
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const tradesLast7Days = await this.tradeRecordModel
+      .find({
+        time: { $gte: sevenDaysAgo },
+        win: { $exists: true },
+      })
+      .exec();
+
+    const dailyStats = new Map<string, { wins: number; total: number }>();
+    const dayOrder = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+
+    tradesLast7Days.forEach((trade) => {
+      const tradeDate = trade.time instanceof Date ? trade.time : new Date(trade.time);
+      const dayName = dayOrder[tradeDate.getDay()];
+      if (!dailyStats.has(dayName)) {
+        dailyStats.set(dayName, { wins: 0, total: 0 });
+      }
+      const stats = dailyStats.get(dayName)!;
+      stats.total++;
+      if (trade.win) stats.wins++;
+    });
+
+    // Create daily accuracy array with all days that have trade data
+    const dailyAccuracy = Array.from(dailyStats.entries())
+      .map(([day, stats]) => ({
+        day,
+        accuracy: stats.total > 0 ? Math.round((stats.wins / stats.total) * 100) : 0,
+      }))
+      .sort((a, b) => {
+        return dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);
+      });
+
     // First, check if there's manually saved audit data
     const savedAudit = await this.auditModel.findOne({ key: 'default' }).exec();
 
     // If manual data exists and has content, use it (allowing manual overrides)
+    // But always use dynamically calculated dailyAccuracy
     if (savedAudit && (
       (savedAudit.recentExecutions && savedAudit.recentExecutions.length > 0) ||
       (savedAudit.performanceByStrategy && savedAudit.performanceByStrategy.length > 0)
@@ -441,7 +478,7 @@ export class AdminService {
         performanceByStrategy: savedAudit.performanceByStrategy || [],
         riskMetrics: savedAudit.riskMetrics || [],
         anomalies: savedAudit.anomalies || [],
-        dailyAccuracy: savedAudit.dailyAccuracy || [],
+        dailyAccuracy: dailyAccuracy.length > 0 ? dailyAccuracy : (savedAudit.dailyAccuracy || []),
         complianceLogs: savedAudit.complianceLogs || {
           riskCompliance: "100%",
           policyViolations: 0,
@@ -577,40 +614,7 @@ export class AdminService {
       }
     });
 
-    // Calculate daily accuracy for the last 7 days
-    const sevenDaysAgo = new Date();
-    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-
-    const tradesLast7Days = await this.tradeRecordModel
-      .find({
-        time: { $gte: sevenDaysAgo },
-        win: { $exists: true },
-      })
-      .exec();
-
-    const dailyStats = new Map<string, { wins: number; total: number }>();
-    const dayNames = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-
-    tradesLast7Days.forEach((trade) => {
-      const tradeDate = trade.time instanceof Date ? trade.time : new Date(trade.time);
-      const dayName = dayNames[tradeDate.getDay()];
-      if (!dailyStats.has(dayName)) {
-        dailyStats.set(dayName, { wins: 0, total: 0 });
-      }
-      const stats = dailyStats.get(dayName)!;
-      stats.total++;
-      if (trade.win) stats.wins++;
-    });
-
-    const dailyAccuracy = Array.from(dailyStats.entries())
-      .map(([day, stats]) => ({
-        day,
-        accuracy: stats.total > 0 ? Math.round((stats.wins / stats.total) * 100) : 0,
-      }))
-      .sort((a, b) => {
-        const dayOrder = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        return dayOrder.indexOf(a.day) - dayOrder.indexOf(b.day);
-      });
+    // dailyAccuracy is already calculated above
 
     // Calculate compliance logs
     const totalTrades = await this.tradeRecordModel.countDocuments({ status: 'Filled' }).exec();

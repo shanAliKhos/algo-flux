@@ -1,14 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { GlassCard } from '@/components/ui/GlassCard';
-import { HeatmapGrid } from '@/components/ui/HeatmapGrid';
-import { StatusBadge } from '@/components/ui/StatusBadge';
-import { MiniChart } from '@/components/ui/MiniChart';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
+import { Loader2, Save, Plus, Trash2, Edit2, Radar } from 'lucide-react';
+import { adminApi } from '@/lib/api';
+import { useToast } from '@/hooks/use-toast';
 import {
   Select,
   SelectContent,
@@ -16,54 +14,60 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import { Loader2, Radar, Save, Plus, Trash2, Edit2, Activity, AlertTriangle, TrendingUp } from 'lucide-react';
-import { adminApi } from '@/lib/api';
-import { useToast } from '@/hooks/use-toast';
-
-interface AssetClass {
-  label: string;
-  value: number;
-  sublabel: string;
-}
-
-interface Opportunity {
-  symbol: string;
-  price: string;
-  change: number;
-  strategy: string;
-  signal: 'In Position' | 'Preparing Entry' | 'Watching';
-}
-
-interface Regime {
-  name: string;
-  description: string;
-}
 
 interface RadarData {
-  assetClasses: AssetClass[];
-  opportunities: Opportunity[];
-  regimes: Regime[];
+  assetClasses: Array<{
+    label: string;
+    value: number;
+    sublabel: string;
+  }>;
+  opportunities: Array<{
+    symbol: string;
+    price: string;
+    change: number;
+    strategy: string;
+    signal: 'In Position' | 'Preparing Entry' | 'Watching';
+  }>;
+  regimes: Array<{
+    name: string;
+    description: string;
+  }>;
 }
 
-export default function Radar() {
+export default function RadarAdmin() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [editingSection, setEditingSection] = useState<string | null>(null);
 
   // Fetch Radar data
   const { data, isLoading, error } = useQuery({
-    queryKey: ['radar-data'],
+    queryKey: ['radar'],
     queryFn: async (): Promise<RadarData> => {
       try {
         const response = await adminApi.getRadar();
         return response;
       } catch (error: any) {
-        // If data doesn't exist yet, return empty structure
+        // Return default data if API doesn't exist yet
         if (error?.message?.includes('not found')) {
           return {
-            assetClasses: [],
-            opportunities: [],
-            regimes: [],
+            assetClasses: [
+              { label: 'Forex', value: 72, sublabel: 'Trending' },
+              { label: 'Indices', value: 58, sublabel: 'Ranging' },
+              { label: 'Stocks', value: 45, sublabel: 'Mixed' },
+              { label: 'Crypto', value: 85, sublabel: 'High Vol' },
+              { label: 'Gold', value: 67, sublabel: 'Trending' },
+              { label: 'Metals', value: 52, sublabel: 'Stable' },
+            ],
+            opportunities: [
+              { symbol: 'XAUUSD', price: '2,034.50', change: 1.24, strategy: 'Nuvex', signal: 'Preparing Entry' },
+              { symbol: 'EURUSD', price: '1.0892', change: -0.34, strategy: 'Yark', signal: 'Watching' },
+              { symbol: 'BTCUSDT', price: '43,892', change: 2.45, strategy: 'Xylo', signal: 'In Position' },
+            ],
+            regimes: [
+              { name: 'High Volatility Regime', description: 'VIX elevated, wider stops recommended' },
+              { name: 'Trending Crypto Regime', description: 'Strong momentum in majors, breakout plays active' },
+              { name: 'Risk-Off Equities', description: 'Defensive positioning, reduced exposure' },
+            ],
           };
         }
         throw error;
@@ -87,18 +91,18 @@ export default function Radar() {
       return await adminApi.updateRadar(config);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['radar-data'] });
-      queryClient.refetchQueries({ queryKey: ['radar-data'] });
+      queryClient.invalidateQueries({ queryKey: ['radar'] });
+      queryClient.refetchQueries({ queryKey: ['radar'] });
       toast({
         title: 'Success',
-        description: 'Radar configuration updated successfully',
+        description: 'Radar data updated successfully',
       });
       setEditingSection(null);
     },
     onError: (error: any) => {
       toast({
         title: 'Error',
-        description: error.message || 'Failed to update configuration',
+        description: error.message || 'Failed to update radar data',
         variant: 'destructive',
       });
     },
@@ -110,20 +114,21 @@ export default function Radar() {
     }
   };
 
-  const updateAssetClass = (index: number, field: keyof AssetClass, value: any) => {
-    if (formData) {
-      const updated = formData.assetClasses.map((item, i) =>
-        i === index ? { ...item, [field]: value } : item
-      );
-      setFormData({ ...formData, assetClasses: updated });
+  const handleCancel = () => {
+    if (data) {
+      setFormData(JSON.parse(JSON.stringify(data))); // Reset to original data
     }
+    setEditingSection(null);
   };
 
   const addAssetClass = () => {
     if (formData) {
       setFormData({
         ...formData,
-        assetClasses: [...formData.assetClasses, { label: 'New Asset', value: 0, sublabel: 'New' }],
+        assetClasses: [
+          ...formData.assetClasses,
+          { label: '', value: 0, sublabel: '' },
+        ],
       });
     }
   };
@@ -137,28 +142,13 @@ export default function Radar() {
     }
   };
 
-  const updateOpportunity = (index: number, field: keyof Opportunity, value: any) => {
-    if (formData) {
-      const updated = formData.opportunities.map((item, i) =>
-        i === index ? { ...item, [field]: value } : item
-      );
-      setFormData({ ...formData, opportunities: updated });
-    }
-  };
-
   const addOpportunity = () => {
     if (formData) {
       setFormData({
         ...formData,
         opportunities: [
           ...formData.opportunities,
-          {
-            symbol: 'NEW',
-            price: '0.00',
-            change: 0,
-            strategy: 'None',
-            signal: 'Watching',
-          },
+          { symbol: '', price: '', change: 0, strategy: '', signal: 'Watching' },
         ],
       });
     }
@@ -173,20 +163,14 @@ export default function Radar() {
     }
   };
 
-  const updateRegime = (index: number, field: keyof Regime, value: any) => {
-    if (formData) {
-      const updated = formData.regimes.map((item, i) =>
-        i === index ? { ...item, [field]: value } : item
-      );
-      setFormData({ ...formData, regimes: updated });
-    }
-  };
-
   const addRegime = () => {
     if (formData) {
       setFormData({
         ...formData,
-        regimes: [...formData.regimes, { name: 'New Regime', description: 'Description' }],
+        regimes: [
+          ...formData.regimes,
+          { name: '', description: '' },
+        ],
       });
     }
   };
@@ -213,20 +197,17 @@ export default function Radar() {
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="text-center">
           <p className="text-destructive mb-2">Error loading Radar data</p>
-          <p className="text-sm text-muted-foreground">Using default configuration</p>
+          <p className="text-sm text-muted-foreground">{error.message}</p>
         </div>
       </div>
     );
   }
 
-  // Initialize form data
-  const currentData = data || {
+  const currentData = formData || data || {
     assetClasses: [],
     opportunities: [],
     regimes: [],
   };
-
-  const displayData = formData || currentData;
 
   return (
     <div className="min-h-screen p-6 lg:p-8 space-y-8">
@@ -235,93 +216,117 @@ export default function Radar() {
         <div className="inline-flex items-center gap-3 mb-4">
           <Radar className="w-10 h-10 text-primary" />
           <h1 className="font-display text-4xl lg:text-5xl font-bold">
-            Multi-Asset <span className="text-primary text-glow">Radar</span>
+            Radar <span className="text-primary text-glow">Management</span>
           </h1>
         </div>
         <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-          How Algofi scans the entire market before placing any trade.
+          Manage and configure radar data for asset classes, opportunities, and market regimes
         </p>
       </div>
 
-      {/* Asset Class Heatmap */}
+      {/* Asset Classes */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Asset Class Heatmap</CardTitle>
-              <CardDescription>Manage asset class data for the heatmap</CardDescription>
+              <CardTitle>Asset Classes</CardTitle>
+              <CardDescription>Configure asset class heatmap data</CardDescription>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (!formData) {
-                  setFormData(JSON.parse(JSON.stringify(currentData)));
-                }
-                setEditingSection(editingSection === 'assetClasses' ? null : 'assetClasses');
-              }}
-            >
-              <Edit2 className="w-4 h-4 mr-2" />
-              {editingSection === 'assetClasses' ? 'Cancel' : 'Edit'}
-            </Button>
+            <div className="flex gap-2">
+              {editingSection === 'assetClasses' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addAssetClass}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!formData && data) {
+                    setFormData(JSON.parse(JSON.stringify(data)));
+                  }
+                  setEditingSection(editingSection === 'assetClasses' ? null : 'assetClasses');
+                  if (editingSection === 'assetClasses') {
+                    handleCancel();
+                  }
+                }}
+              >
+                <Edit2 className="w-4 h-4 mr-2" />
+                {editingSection === 'assetClasses' ? 'Cancel' : 'Edit'}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
           {editingSection === 'assetClasses' && formData ? (
             <div className="space-y-4">
-              {formData.assetClasses.map((item, index) => (
-                <div key={index} className="flex gap-2 items-end">
-                  <div className="flex-1 space-y-2">
+              {formData.assetClasses.map((assetClass, index) => (
+                <div key={index} className="flex gap-4 items-end p-4 border rounded-lg">
+                  <div className="flex-1">
                     <Label>Label</Label>
                     <Input
-                      value={item.label}
-                      onChange={(e) => updateAssetClass(index, 'label', e.target.value)}
+                      value={assetClass.label}
+                      onChange={(e) => {
+                        const newAssetClasses = [...formData.assetClasses];
+                        newAssetClasses[index].label = e.target.value;
+                        setFormData({ ...formData, assetClasses: newAssetClasses });
+                      }}
                     />
                   </div>
-                  <div className="w-32 space-y-2">
+                  <div className="flex-1">
                     <Label>Value (0-100)</Label>
                     <Input
                       type="number"
                       min="0"
                       max="100"
-                      value={item.value}
-                      onChange={(e) =>
-                        updateAssetClass(index, 'value', parseInt(e.target.value) || 0)
-                      }
+                      value={assetClass.value}
+                      onChange={(e) => {
+                        const newAssetClasses = [...formData.assetClasses];
+                        newAssetClasses[index].value = Number(e.target.value);
+                        setFormData({ ...formData, assetClasses: newAssetClasses });
+                      }}
                     />
                   </div>
-                  <div className="flex-1 space-y-2">
+                  <div className="flex-1">
                     <Label>Sublabel</Label>
                     <Input
-                      value={item.sublabel}
-                      onChange={(e) => updateAssetClass(index, 'sublabel', e.target.value)}
+                      value={assetClass.sublabel}
+                      onChange={(e) => {
+                        const newAssetClasses = [...formData.assetClasses];
+                        newAssetClasses[index].sublabel = e.target.value;
+                        setFormData({ ...formData, assetClasses: newAssetClasses });
+                      }}
                     />
                   </div>
-                  <Button variant="ghost" size="icon" onClick={() => removeAssetClass(index)}>
-                    <Trash2 className="w-4 h-4" />
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeAssetClass(index)}
+                  >
+                    <Trash2 className="w-4 h-4 text-destructive" />
                   </Button>
                 </div>
               ))}
             </div>
           ) : (
-            <div>
-              <div className="flex items-center justify-between mb-6">
-                <h3 className="font-display font-bold text-xl">Asset Class Heatmap</h3>
-                <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                  <Activity className="w-4 h-4 text-primary animate-pulse" />
-                  <span>Live scan</span>
+            <div className="grid grid-cols-3 gap-4">
+              {currentData.assetClasses.map((assetClass, index) => (
+                <div key={index} className="p-4 border rounded-lg">
+                  <div className="font-semibold">{assetClass.label}</div>
+                  <div className="text-2xl font-bold text-primary">{assetClass.value}</div>
+                  <div className="text-sm text-muted-foreground">{assetClass.sublabel}</div>
                 </div>
-              </div>
-              <HeatmapGrid cells={displayData.assetClasses} columns={3} />
+              ))}
             </div>
           )}
         </CardContent>
-        {editingSection === 'assetClasses' && formData && (
-          <CardFooter className="flex items-center justify-between gap-4">
-            <Button variant="outline" onClick={addAssetClass}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Asset Class
-            </Button>
+        {editingSection === 'assetClasses' && (
+          <CardFooter>
             <Button onClick={handleSave} disabled={updateMutation.isPending}>
               {updateMutation.isPending ? (
                 <>
@@ -331,7 +336,7 @@ export default function Radar() {
               ) : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  Save
+                  Save Changes
                 </>
               )}
             </Button>
@@ -339,135 +344,146 @@ export default function Radar() {
         )}
       </Card>
 
-      {/* Top Opportunities */}
+      {/* Opportunities */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
               <CardTitle>Top Opportunities</CardTitle>
-              <CardDescription>Manage trading opportunities</CardDescription>
+              <CardDescription>Configure trading opportunities</CardDescription>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (!formData) {
-                  setFormData(JSON.parse(JSON.stringify(currentData)));
-                }
-                setEditingSection(editingSection === 'opportunities' ? null : 'opportunities');
-              }}
-            >
-              <Edit2 className="w-4 h-4 mr-2" />
-              {editingSection === 'opportunities' ? 'Cancel' : 'Edit'}
-            </Button>
+            <div className="flex gap-2">
+              {editingSection === 'opportunities' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addOpportunity}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!formData && data) {
+                    setFormData(JSON.parse(JSON.stringify(data)));
+                  }
+                  setEditingSection(editingSection === 'opportunities' ? null : 'opportunities');
+                  if (editingSection === 'opportunities') {
+                    handleCancel();
+                  }
+                }}
+              >
+                <Edit2 className="w-4 h-4 mr-2" />
+                {editingSection === 'opportunities' ? 'Cancel' : 'Edit'}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
           {editingSection === 'opportunities' && formData ? (
-            <div className="space-y-6">
-              {formData.opportunities.map((opp, index) => (
-                <Card key={index}>
-                  <CardContent className="pt-6 space-y-4">
-                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-                      <div className="space-y-2">
-                        <Label>Symbol</Label>
-                        <Input
-                          value={opp.symbol}
-                          onChange={(e) => updateOpportunity(index, 'symbol', e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Price</Label>
-                        <Input
-                          value={opp.price}
-                          onChange={(e) => updateOpportunity(index, 'price', e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Change (%)</Label>
-                        <Input
-                          type="number"
-                          value={opp.change}
-                          onChange={(e) =>
-                            updateOpportunity(index, 'change', parseFloat(e.target.value) || 0)
-                          }
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Strategy</Label>
-                        <Input
-                          value={opp.strategy}
-                          onChange={(e) => updateOpportunity(index, 'strategy', e.target.value)}
-                        />
-                      </div>
-                      <div className="space-y-2">
-                        <Label>Signal</Label>
-                        <Select
-                          value={opp.signal}
-                          onValueChange={(value) => updateOpportunity(index, 'signal', value)}
-                        >
-                          <SelectTrigger>
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="In Position">In Position</SelectItem>
-                            <SelectItem value="Preparing Entry">Preparing Entry</SelectItem>
-                            <SelectItem value="Watching">Watching</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
-                    <Button variant="destructive" size="sm" onClick={() => removeOpportunity(index)}>
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Remove
-                    </Button>
-                  </CardContent>
-                </Card>
+            <div className="space-y-4">
+              {formData.opportunities.map((opportunity, index) => (
+                <div key={index} className="flex gap-4 items-end p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <Label>Symbol</Label>
+                    <Input
+                      value={opportunity.symbol}
+                      onChange={(e) => {
+                        const newOpportunities = [...formData.opportunities];
+                        newOpportunities[index].symbol = e.target.value;
+                        setFormData({ ...formData, opportunities: newOpportunities });
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Label>Price</Label>
+                    <Input
+                      value={opportunity.price}
+                      onChange={(e) => {
+                        const newOpportunities = [...formData.opportunities];
+                        newOpportunities[index].price = e.target.value;
+                        setFormData({ ...formData, opportunities: newOpportunities });
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Label>Change (%)</Label>
+                    <Input
+                      type="number"
+                      value={opportunity.change}
+                      onChange={(e) => {
+                        const newOpportunities = [...formData.opportunities];
+                        newOpportunities[index].change = Number(e.target.value);
+                        setFormData({ ...formData, opportunities: newOpportunities });
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Label>Strategy</Label>
+                    <Input
+                      value={opportunity.strategy}
+                      onChange={(e) => {
+                        const newOpportunities = [...formData.opportunities];
+                        newOpportunities[index].strategy = e.target.value;
+                        setFormData({ ...formData, opportunities: newOpportunities });
+                      }}
+                    />
+                  </div>
+                  <div className="flex-1">
+                    <Label>Signal</Label>
+                    <Select
+                      value={opportunity.signal}
+                      onValueChange={(value: 'In Position' | 'Preparing Entry' | 'Watching') => {
+                        const newOpportunities = [...formData.opportunities];
+                        newOpportunities[index].signal = value;
+                        setFormData({ ...formData, opportunities: newOpportunities });
+                      }}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="In Position">In Position</SelectItem>
+                        <SelectItem value="Preparing Entry">Preparing Entry</SelectItem>
+                        <SelectItem value="Watching">Watching</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeOpportunity(index)}
+                  >
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </Button>
+                </div>
               ))}
             </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead>
-                  <tr className="border-b border-border text-left">
-                    <th className="py-3 px-2 text-xs font-medium text-muted-foreground uppercase">Symbol</th>
-                    <th className="py-3 px-2 text-xs font-medium text-muted-foreground uppercase">Price</th>
-                    <th className="py-3 px-2 text-xs font-medium text-muted-foreground uppercase">24h</th>
-                    <th className="py-3 px-2 text-xs font-medium text-muted-foreground uppercase">Trend</th>
-                    <th className="py-3 px-2 text-xs font-medium text-muted-foreground uppercase">Strategy</th>
-                    <th className="py-3 px-2 text-xs font-medium text-muted-foreground uppercase">Signal</th>
+                  <tr className="border-b">
+                    <th className="text-left py-2 px-2">Symbol</th>
+                    <th className="text-left py-2 px-2">Price</th>
+                    <th className="text-left py-2 px-2">Change</th>
+                    <th className="text-left py-2 px-2">Strategy</th>
+                    <th className="text-left py-2 px-2">Signal</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {displayData.opportunities.map((opp) => (
-                    <tr key={opp.symbol} className="border-b border-border/50 hover:bg-muted/30 transition-colors">
-                      <td className="py-4 px-2 font-medium font-mono">{opp.symbol}</td>
-                      <td className="py-4 px-2 font-mono text-muted-foreground">{opp.price}</td>
-                      <td className="py-4 px-2">
-                        <span className={opp.change >= 0 ? 'text-bullish' : 'text-bearish'}>
-                          {opp.change >= 0 ? '+' : ''}
-                          {opp.change}%
-                        </span>
+                  {currentData.opportunities.map((opportunity, index) => (
+                    <tr key={index} className="border-b">
+                      <td className="py-2 px-2 font-mono">{opportunity.symbol}</td>
+                      <td className="py-2 px-2">{opportunity.price}</td>
+                      <td className={`py-2 px-2 ${opportunity.change >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        {opportunity.change >= 0 ? '+' : ''}{opportunity.change}%
                       </td>
-                      <td className="py-4 px-2 w-24">
-                        <MiniChart
-                          color={opp.change >= 0 ? 'bullish' : 'bearish'}
-                          height={24}
-                        />
-                      </td>
-                      <td className="py-4 px-2 text-sm text-muted-foreground">{opp.strategy}</td>
-                      <td className="py-4 px-2">
-                        <StatusBadge
-                          status={
-                            opp.signal === 'In Position'
-                              ? 'active'
-                              : opp.signal === 'Preparing Entry'
-                                ? 'preparing'
-                                : 'watching'
-                          }
-                          text={opp.signal}
-                        />
-                      </td>
+                      <td className="py-2 px-2">{opportunity.strategy}</td>
+                      <td className="py-2 px-2">{opportunity.signal}</td>
                     </tr>
                   ))}
                 </tbody>
@@ -475,12 +491,8 @@ export default function Radar() {
             </div>
           )}
         </CardContent>
-        {editingSection === 'opportunities' && formData && (
-          <CardFooter className="flex items-center justify-between gap-4">
-            <Button variant="outline" onClick={addOpportunity}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Opportunity
-            </Button>
+        {editingSection === 'opportunities' && (
+          <CardFooter>
             <Button onClick={handleSave} disabled={updateMutation.isPending}>
               {updateMutation.isPending ? (
                 <>
@@ -490,7 +502,7 @@ export default function Radar() {
               ) : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  Save
+                  Save Changes
                 </>
               )}
             </Button>
@@ -498,86 +510,94 @@ export default function Radar() {
         )}
       </Card>
 
-      {/* Regime Detection */}
+      {/* Regimes */}
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle>Regime Detection</CardTitle>
-              <CardDescription>Manage market regime detections</CardDescription>
+              <CardTitle>Market Regimes</CardTitle>
+              <CardDescription>Configure market regime detection data</CardDescription>
             </div>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => {
-                if (!formData) {
-                  setFormData(JSON.parse(JSON.stringify(currentData)));
-                }
-                setEditingSection(editingSection === 'regimes' ? null : 'regimes');
-              }}
-            >
-              <Edit2 className="w-4 h-4 mr-2" />
-              {editingSection === 'regimes' ? 'Cancel' : 'Edit'}
-            </Button>
+            <div className="flex gap-2">
+              {editingSection === 'regimes' && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={addRegime}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add
+                </Button>
+              )}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => {
+                  if (!formData && data) {
+                    setFormData(JSON.parse(JSON.stringify(data)));
+                  }
+                  setEditingSection(editingSection === 'regimes' ? null : 'regimes');
+                  if (editingSection === 'regimes') {
+                    handleCancel();
+                  }
+                }}
+              >
+                <Edit2 className="w-4 h-4 mr-2" />
+                {editingSection === 'regimes' ? 'Cancel' : 'Edit'}
+              </Button>
+            </div>
           </div>
         </CardHeader>
         <CardContent>
           {editingSection === 'regimes' && formData ? (
             <div className="space-y-4">
               {formData.regimes.map((regime, index) => (
-                <Card key={index}>
-                  <CardContent className="pt-6 space-y-4">
-                    <div className="space-y-2">
-                      <Label>Name</Label>
-                      <Input
-                        value={regime.name}
-                        onChange={(e) => updateRegime(index, 'name', e.target.value)}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label>Description</Label>
-                      <Textarea
-                        value={regime.description}
-                        onChange={(e) => updateRegime(index, 'description', e.target.value)}
-                      />
-                    </div>
-                    <Button variant="destructive" size="sm" onClick={() => removeRegime(index)}>
-                      <Trash2 className="w-4 h-4 mr-2" />
-                      Remove
-                    </Button>
-                  </CardContent>
-                </Card>
+                <div key={index} className="flex gap-4 items-end p-4 border rounded-lg">
+                  <div className="flex-1">
+                    <Label>Name</Label>
+                    <Input
+                      value={regime.name}
+                      onChange={(e) => {
+                        const newRegimes = [...formData.regimes];
+                        newRegimes[index].name = e.target.value;
+                        setFormData({ ...formData, regimes: newRegimes });
+                      }}
+                    />
+                  </div>
+                  <div className="flex-2">
+                    <Label>Description</Label>
+                    <Input
+                      value={regime.description}
+                      onChange={(e) => {
+                        const newRegimes = [...formData.regimes];
+                        newRegimes[index].description = e.target.value;
+                        setFormData({ ...formData, regimes: newRegimes });
+                      }}
+                    />
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeRegime(index)}
+                  >
+                    <Trash2 className="w-4 h-4 text-destructive" />
+                  </Button>
+                </div>
               ))}
             </div>
           ) : (
-            <div>
-              <div className="flex items-center gap-3 mb-6">
-                <AlertTriangle className="w-5 h-5 text-neutral" />
-                <h3 className="font-display font-bold text-xl">Regime Detection</h3>
-              </div>
-              <div className="grid md:grid-cols-3 gap-4">
-                {displayData.regimes.map((regime, i) => (
-                  <div
-                    key={i}
-                    className="p-4 rounded-lg bg-muted/50 border border-border hover:border-primary/30 transition-colors"
-                  >
-                    <div className="flex items-center gap-2 mb-2">
-                      <TrendingUp className="w-4 h-4 text-primary" />
-                      <span className="font-medium text-sm">{regime.name}</span>
-                    </div>
-                    <p className="text-xs text-muted-foreground">{regime.description}</p>
-                  </div>
-                ))}
-              </div>
+            <div className="grid md:grid-cols-3 gap-4">
+              {currentData.regimes.map((regime, index) => (
+                <div key={index} className="p-4 border rounded-lg">
+                  <div className="font-semibold mb-2">{regime.name}</div>
+                  <div className="text-sm text-muted-foreground">{regime.description}</div>
+                </div>
+              ))}
             </div>
           )}
         </CardContent>
-        {editingSection === 'regimes' && formData && (
-          <CardFooter className="flex items-center justify-between gap-4">
-            <Button variant="outline" onClick={addRegime}>
-              <Plus className="w-4 h-4 mr-2" />
-              Add Regime
-            </Button>
+        {editingSection === 'regimes' && (
+          <CardFooter>
             <Button onClick={handleSave} disabled={updateMutation.isPending}>
               {updateMutation.isPending ? (
                 <>
@@ -587,7 +607,7 @@ export default function Radar() {
               ) : (
                 <>
                   <Save className="w-4 h-4 mr-2" />
-                  Save
+                  Save Changes
                 </>
               )}
             </Button>

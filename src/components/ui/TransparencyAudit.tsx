@@ -241,15 +241,26 @@ export function TransparencyAudit({ className }: TransparencyAuditProps) {
           ) : (
             <>
               <div className="flex items-end justify-between h-32 gap-2">
-                {dailyAccuracy.map((day, i) => (
-              <div key={i} className="flex-1 flex flex-col items-center gap-2">
-                <div 
-                  className="w-full rounded-t bg-primary/60 transition-all hover:bg-primary"
-                  style={{ height: `${day.accuracy}%` }}
-                />
-                  <span className="text-xs text-muted-foreground">{day.day}</span>
-                </div>
-                ))}
+                {dailyAccuracy.map((day, i) => {
+                  const barHeightPercent = Math.max(day.accuracy, day.accuracy === 0 ? 2 : 4);
+                  return (
+                    <div key={i} className="flex-1 flex flex-col items-center gap-1">
+                      {/* Percentage label above bar */}
+                      <span className="text-xs font-medium text-primary mb-1">
+                        {day.accuracy > 0 ? `${day.accuracy}%` : ''}
+                      </span>
+                      {/* Bar */}
+                      <div className="relative w-full h-full flex items-end">
+                        <div 
+                          className="w-full rounded-t bg-primary/60 transition-all hover:bg-primary"
+                          style={{ height: `${barHeightPercent}%`, minHeight: '2px' }}
+                        />
+                      </div>
+                      {/* Day label below bar */}
+                      <span className="text-xs text-muted-foreground mt-1">{day.day}</span>
+                    </div>
+                  );
+                })}
               </div>
               <div className="flex justify-between mt-4 pt-4 border-t border-border">
                 <span className="text-sm text-muted-foreground">Weekly Avg</span>

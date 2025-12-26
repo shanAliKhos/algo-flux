@@ -1,16 +1,29 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getModelToken } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
+import { BadRequestException } from '@nestjs/common';
 import { AdminService } from './admin.service';
 import { User, UserDocument } from '../users/schemas/user.schema';
 import { AIBrain, AIBrainDocument } from './schemas/ai-brain.schema';
 import { AIBrainDto } from './dto/ai-brain.dto';
+import { Radar, RadarDocument } from './schemas/radar.schema';
+import { RadarDto } from './dto/radar.dto';
+import { MarketBrain, MarketBrainDocument } from './schemas/market-brain.schema';
+import { Performance, PerformanceDocument } from './schemas/performance.schema';
+import { Strategies, StrategiesDocument } from './schemas/strategies.schema';
+import { TradeFormation, TradeFormationDocument } from './schemas/trade-formation.schema';
+import { AccountRooms, AccountRoomsDocument } from './schemas/account-rooms.schema';
+import { Conditions, ConditionsDocument } from './schemas/conditions.schema';
+import { Execution, ExecutionDocument } from './schemas/execution.schema';
+import { Audit, AuditDocument } from './schemas/audit.schema';
+import { TradeRecord, TradeRecordDocument } from './schemas/trade-record.schema';
 import { UserRole, UserStatus } from '../users/schemas/user.schema';
 
 describe('AdminService', () => {
   let service: AdminService;
   let userModel: Model<UserDocument>;
   let aiBrainModel: Model<AIBrainDocument>;
+  let radarModel: Model<RadarDocument>;
 
   const mockUserModel = {
     countDocuments: jest.fn(),
@@ -22,6 +35,21 @@ describe('AdminService', () => {
     findOne: jest.fn(),
     findOneAndUpdate: jest.fn(),
   };
+
+  const mockRadarModel = {
+    findOne: jest.fn(),
+    findOneAndUpdate: jest.fn(),
+  };
+
+  // Mock models for other dependencies (not used in radar tests but required by AdminService)
+  const createMockModel = () => ({
+    findOne: jest.fn(),
+    findOneAndUpdate: jest.fn(),
+    find: jest.fn(),
+    create: jest.fn(),
+    countDocuments: jest.fn(),
+    aggregate: jest.fn(),
+  });
 
   const mockAIBrainData: AIBrainDto = {
     neuralConfig: {
@@ -69,12 +97,53 @@ describe('AdminService', () => {
           provide: getModelToken(AIBrain.name),
           useValue: mockAIBrainModel,
         },
+        {
+          provide: getModelToken(MarketBrain.name),
+          useValue: createMockModel(),
+        },
+        {
+          provide: getModelToken(Performance.name),
+          useValue: createMockModel(),
+        },
+        {
+          provide: getModelToken(Strategies.name),
+          useValue: createMockModel(),
+        },
+        {
+          provide: getModelToken(TradeFormation.name),
+          useValue: createMockModel(),
+        },
+        {
+          provide: getModelToken(AccountRooms.name),
+          useValue: createMockModel(),
+        },
+        {
+          provide: getModelToken(Conditions.name),
+          useValue: createMockModel(),
+        },
+        {
+          provide: getModelToken(Execution.name),
+          useValue: createMockModel(),
+        },
+        {
+          provide: getModelToken(Audit.name),
+          useValue: createMockModel(),
+        },
+        {
+          provide: getModelToken(Radar.name),
+          useValue: mockRadarModel,
+        },
+        {
+          provide: getModelToken(TradeRecord.name),
+          useValue: createMockModel(),
+        },
       ],
     }).compile();
 
     service = module.get<AdminService>(AdminService);
     userModel = module.get<Model<UserDocument>>(getModelToken(User.name));
     aiBrainModel = module.get<Model<AIBrainDocument>>(getModelToken(AIBrain.name));
+    radarModel = module.get<Model<RadarDocument>>(getModelToken(Radar.name));
   });
 
   afterEach(() => {
@@ -247,5 +316,149 @@ describe('AdminService', () => {
   //     expect(result).toEqual(mockMarketBrain);
   //   });
   // });
+
+  describe('getRadar', () => {
+    it('should return Radar data when found', async () => {
+      const mockRadar = {
+        assetClasses: [
+          { label: 'Forex', value: 72, sublabel: 'Trending' },
+          { label: 'Indices', value: 58, sublabel: 'Ranging' },
+        ],
+        opportunities: [
+          {
+            symbol: 'XAUUSD',
+            price: '2,034.50',
+            change: 1.24,
+            strategy: 'Nuvex',
+            signal: 'Preparing Entry' as const,
+          },
+        ],
+        regimes: [
+          {
+            name: 'High Volatility Regime',
+            description: 'VIX elevated, wider stops recommended',
+          },
+        ],
+      };
+
+      mockRadarModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockRadar),
+      });
+
+      const result = await service.getRadar();
+
+      expect(result).toEqual({
+        assetClasses: mockRadar.assetClasses,
+        opportunities: mockRadar.opportunities,
+        regimes: mockRadar.regimes,
+      });
+      expect(mockRadarModel.findOne).toHaveBeenCalledWith({ key: 'default' });
+    });
+
+    it('should throw BadRequestException when Radar data not found', async () => {
+      mockRadarModel.findOne.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(null),
+      });
+
+      await expect(service.getRadar()).rejects.toThrow(BadRequestException);
+      await expect(service.getRadar()).rejects.toThrow(
+        'Radar data not found',
+      );
+    });
+  });
+
+  describe('updateRadar', () => {
+    it('should create new Radar configuration if not exists', async () => {
+      const mockRadarDto: RadarDto = {
+        assetClasses: [
+          { label: 'Forex', value: 72, sublabel: 'Trending' },
+          { label: 'Crypto', value: 85, sublabel: 'High Vol' },
+        ],
+        opportunities: [
+          {
+            symbol: 'BTCUSDT',
+            price: '43,892',
+            change: 2.45,
+            strategy: 'Xylo',
+            signal: 'In Position',
+          },
+        ],
+        regimes: [
+          {
+            name: 'Trending Crypto Regime',
+            description: 'Strong momentum in majors, breakout plays active',
+          },
+        ],
+      };
+
+      const mockCreatedRadar = {
+        assetClasses: mockRadarDto.assetClasses,
+        opportunities: mockRadarDto.opportunities,
+        regimes: mockRadarDto.regimes,
+      };
+
+      mockRadarModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockCreatedRadar),
+      });
+
+      const result = await service.updateRadar(mockRadarDto);
+
+      expect(result).toEqual({
+        assetClasses: mockCreatedRadar.assetClasses,
+        opportunities: mockCreatedRadar.opportunities,
+        regimes: mockCreatedRadar.regimes,
+      });
+      expect(mockRadarModel.findOneAndUpdate).toHaveBeenCalledWith(
+        { key: 'default' },
+        {
+          key: 'default',
+          assetClasses: mockRadarDto.assetClasses,
+          opportunities: mockRadarDto.opportunities,
+          regimes: mockRadarDto.regimes,
+        },
+        { upsert: true, new: true },
+      );
+    });
+
+    it('should update existing Radar configuration', async () => {
+      const updatedData: RadarDto = {
+        assetClasses: [
+          { label: 'Updated Forex', value: 80, sublabel: 'Updated Status' },
+        ],
+        opportunities: [
+          {
+            symbol: 'ETHUSDT',
+            price: '2,345.80',
+            change: 1.87,
+            strategy: 'Xylo',
+            signal: 'Preparing Entry',
+          },
+        ],
+        regimes: [
+          {
+            name: 'Updated Regime',
+            description: 'Updated description',
+          },
+        ],
+      };
+
+      const mockUpdatedRadar = {
+        assetClasses: updatedData.assetClasses,
+        opportunities: updatedData.opportunities,
+        regimes: updatedData.regimes,
+      };
+
+      mockRadarModel.findOneAndUpdate.mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockUpdatedRadar),
+      });
+
+      const result = await service.updateRadar(updatedData);
+
+      expect(result.assetClasses[0].label).toBe('Updated Forex');
+      expect(result.assetClasses[0].value).toBe(80);
+      expect(result.opportunities[0].symbol).toBe('ETHUSDT');
+      expect(result.regimes[0].name).toBe('Updated Regime');
+    });
+  });
 });
 

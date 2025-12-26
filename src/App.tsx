@@ -189,7 +189,7 @@ const App = () => (
               }
             />
             <Route
-              path="/admin/audit"
+              path="/admin/audit-room"
               element={
                 <ProtectedRoute>
                   <AdminLayout>
@@ -199,7 +199,7 @@ const App = () => (
               }
             />
             <Route
-              path="/admin/radar"
+              path="/admin/market-radar"
               element={
                 <ProtectedRoute>
                   <AdminLayout>

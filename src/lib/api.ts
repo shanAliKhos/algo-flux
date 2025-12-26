@@ -573,7 +573,7 @@ export const adminApi = {
         name: string;
         description: string;
       }>;
-    }>('/admin/radar', true), // Skip auth for public endpoint
+    }>('/admin/market-radar', true), // Skip auth for public endpoint
   updateRadar: (data: {
     assetClasses: Array<{
       label: string;
@@ -591,7 +591,7 @@ export const adminApi = {
       name: string;
       description: string;
     }>;
-  }) => apiClient.post('/admin/radar', data),
+  }) => apiClient.post('/admin/market-radar', data),
   getAudit: () =>
     apiClient.get<{
       recentExecutions: Array<{
@@ -631,7 +631,7 @@ export const adminApi = {
         systemUptime: string;
         avgLatency: string;
       };
-    }>('/admin/audit', true), // Skip auth for public endpoint
+    }>('/admin/audit-room', true), // Skip auth for public endpoint
   updateAudit: (data: {
     recentExecutions: Array<{
       time: string;
@@ -670,7 +670,7 @@ export const adminApi = {
       systemUptime: string;
       avgLatency: string;
     };
-  }) => apiClient.post('/admin/audit', data),
+  }) => apiClient.post('/admin/audit-room', data),
   getConditions: () =>
     apiClient.get<{
       marketPersonality: Array<{

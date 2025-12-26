@@ -155,14 +155,14 @@ export class AdminController {
   }
 
   @Public()
-  @Get('audit')
+  @Get('audit-room')
   @ApiOperation({ summary: 'Get Audit data (Public)' })
   @ApiResponse({ status: 200, description: 'Audit data retrieved successfully' })
   getAudit() {
     return this.adminService.getAudit();
   }
 
-  @Post('audit')
+  @Post('audit-room')
   @ApiOperation({ summary: 'Update Audit data' })
   @ApiResponse({ status: 200, description: 'Audit data updated successfully' })
   updateAudit(@Body(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true })) auditDto: AuditDto) {
@@ -170,14 +170,14 @@ export class AdminController {
   }
 
   @Public()
-  @Get('radar')
+  @Get('market-radar')
   @ApiOperation({ summary: 'Get Radar data (Public)' })
   @ApiResponse({ status: 200, description: 'Radar data retrieved successfully' })
   getRadar() {
     return this.adminService.getRadar();
   }
 
-  @Post('radar')
+  @Post('market-radar')
   @ApiOperation({ summary: 'Update Radar data' })
   @ApiResponse({ status: 200, description: 'Radar data updated successfully' })
   updateRadar(@Body(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true })) radarDto: RadarDto) {

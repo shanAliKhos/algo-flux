@@ -3,6 +3,7 @@ import { AdminController } from './admin.controller';
 import { AdminService } from './admin.service';
 import { AIBrainDto } from './dto/ai-brain.dto';
 import { MarketBrainDto } from './dto/market-brain.dto';
+import { RadarDto } from './dto/radar.dto';
 
 describe('AdminController', () => {
   let controller: AdminController;
@@ -14,6 +15,8 @@ describe('AdminController', () => {
     updateAIBrain: jest.fn(),
     getMarketBrain: jest.fn(),
     updateMarketBrain: jest.fn(),
+    getRadar: jest.fn(),
+    updateRadar: jest.fn(),
   };
 
   const mockAIBrainData: AIBrainDto = {
@@ -342,5 +345,139 @@ describe('AdminController', () => {
   //     );
   //   });
   // });
+
+  describe('getRadar', () => {
+    it('should return Radar data', async () => {
+      const mockRadarData: RadarDto = {
+        assetClasses: [
+          { label: 'Forex', value: 72, sublabel: 'Trending' },
+          { label: 'Indices', value: 58, sublabel: 'Ranging' },
+          { label: 'Stocks', value: 45, sublabel: 'Mixed' },
+        ],
+        opportunities: [
+          {
+            symbol: 'XAUUSD',
+            price: '2,034.50',
+            change: 1.24,
+            strategy: 'Nuvex',
+            signal: 'Preparing Entry',
+          },
+          {
+            symbol: 'EURUSD',
+            price: '1.0892',
+            change: -0.34,
+            strategy: 'Yark',
+            signal: 'Watching',
+          },
+        ],
+        regimes: [
+          {
+            name: 'High Volatility Regime',
+            description: 'VIX elevated, wider stops recommended',
+          },
+          {
+            name: 'Trending Crypto Regime',
+            description: 'Strong momentum in majors, breakout plays active',
+          },
+        ],
+      };
+
+      mockAdminService.getRadar.mockResolvedValue(mockRadarData);
+
+      const result = await controller.getRadar();
+
+      expect(result).toEqual(mockRadarData);
+      expect(service.getRadar).toHaveBeenCalled();
+    });
+
+    it('should handle errors when getting Radar data', async () => {
+      const error = new Error('Database error');
+      mockAdminService.getRadar.mockRejectedValue(error);
+
+      await expect(controller.getRadar()).rejects.toThrow('Database error');
+    });
+  });
+
+  describe('updateRadar', () => {
+    it('should update Radar data', async () => {
+      const mockRadarData: RadarDto = {
+        assetClasses: [
+          { label: 'Forex', value: 75, sublabel: 'Trending' },
+          { label: 'Crypto', value: 85, sublabel: 'High Vol' },
+        ],
+        opportunities: [
+          {
+            symbol: 'BTCUSDT',
+            price: '43,892',
+            change: 2.45,
+            strategy: 'Xylo',
+            signal: 'In Position',
+          },
+        ],
+        regimes: [
+          {
+            name: 'Risk-Off Equities',
+            description: 'Defensive positioning, reduced exposure',
+          },
+        ],
+      };
+
+      mockAdminService.updateRadar.mockResolvedValue(mockRadarData);
+
+      const result = await controller.updateRadar(mockRadarData);
+
+      expect(result).toEqual(mockRadarData);
+      expect(service.updateRadar).toHaveBeenCalledWith(mockRadarData);
+    });
+
+    it('should validate and update all Radar fields', async () => {
+      const updatedData: RadarDto = {
+        assetClasses: [
+          { label: 'Updated Forex', value: 80, sublabel: 'Updated Status' },
+        ],
+        opportunities: [
+          {
+            symbol: 'ETHUSDT',
+            price: '2,345.80',
+            change: 1.87,
+            strategy: 'Xylo',
+            signal: 'Preparing Entry',
+          },
+        ],
+        regimes: [
+          {
+            name: 'Updated Regime',
+            description: 'Updated description',
+          },
+        ],
+      };
+
+      mockAdminService.updateRadar.mockResolvedValue(updatedData);
+
+      const result = await controller.updateRadar(updatedData);
+
+      expect(result.assetClasses[0].label).toBe('Updated Forex');
+      expect(result.assetClasses[0].value).toBe(80);
+      expect(result.opportunities[0].symbol).toBe('ETHUSDT');
+      expect(result.regimes[0].name).toBe('Updated Regime');
+    });
+
+    it('should handle errors when updating Radar data', async () => {
+      const mockRadarData: RadarDto = {
+        assetClasses: [
+          { label: 'Forex', value: 72, sublabel: 'Trending' },
+        ],
+        opportunities: [],
+        regimes: [],
+      };
+
+      const error = new Error('Update failed');
+      mockAdminService.updateRadar.mockRejectedValue(error);
+
+      await expect(controller.updateRadar(mockRadarData)).rejects.toThrow(
+        'Update failed',
+      );
+    });
+  });
 });
 

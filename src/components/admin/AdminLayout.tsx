@@ -30,13 +30,13 @@ const adminNavItems = [
   { name: 'Dashboard', path: '/admin/dashboard', icon: LayoutDashboard },
   { name: 'AI Brain', path: '/admin/neural-processing', icon: Brain },
   { name: 'Market Brain', path: '/admin/market-brain', icon: Radar },
-  { name: 'Radar', path: '/admin/radar', icon: ScanLine },
+  { name: 'Market Radar', path: '/admin/market-radar', icon: ScanLine },
   { name: 'Performance', path: '/admin/performance', icon: TrendingUp },
   { name: 'Strategies', path: '/admin/strategies', icon: Target },
   { name: 'Trade Formation', path: '/admin/trade-formation', icon: Sparkles },
   { name: 'Account Rooms', path: '/admin/account-rooms', icon: Users },
   { name: 'Market Conditions', path: '/admin/conditions', icon: Compass },
-  { name: 'Audit', path: '/admin/audit', icon: Shield },
+  { name: 'Audit Room', path: '/admin/audit-room', icon: Shield },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
