@@ -5,8 +5,9 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2, Save, Plus, Trash2, Edit2, Radar } from 'lucide-react';
-import { adminApi } from '@/lib/api';
+import { adminApi, apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { getAllSymbols } from '@/lib/trading-pairs';
 import {
   Select,
   SelectContent,
@@ -34,10 +35,47 @@ interface RadarData {
   }>;
 }
 
+interface Strategy {
+  id?: string;
+  name: string;
+  status: 'active' | 'waiting' | 'cooling';
+  accuracy: number;
+  confidence: 'high' | 'medium' | 'low';
+  bias: string;
+  instruments: string[];
+}
+
+const assetCategories = [
+  'Forex',
+  'Indices',
+  'Stocks',
+  'Crypto',
+  'Gold',
+  'Metals',
+  'Commodities',
+  'Bonds',
+  'Currencies',
+];
+
 export default function RadarAdmin() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [editingSection, setEditingSection] = useState<string | null>(null);
+
+  // Fetch strategies for the select dropdown
+  const { data: strategies = [] } = useQuery<Strategy[]>({
+    queryKey: ['strategies'],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get<Strategy[]>('/admin/strategies');
+        return response || [];
+      } catch (error) {
+        console.error('Failed to fetch strategies:', error);
+        return [];
+      }
+    },
+    retry: 1,
+  });
 
   // Fetch Radar data
   const { data, isLoading, error } = useQuery({
@@ -269,14 +307,25 @@ export default function RadarAdmin() {
                 <div key={index} className="flex gap-4 items-end p-4 border rounded-lg">
                   <div className="flex-1">
                     <Label>Label</Label>
-                    <Input
+                    <Select
                       value={assetClass.label}
-                      onChange={(e) => {
+                      onValueChange={(value) => {
                         const newAssetClasses = [...formData.assetClasses];
-                        newAssetClasses[index].label = e.target.value;
+                        newAssetClasses[index].label = value;
                         setFormData({ ...formData, assetClasses: newAssetClasses });
                       }}
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select asset class" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {assetCategories.map((category) => (
+                          <SelectItem key={category} value={category}>
+                            {category}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex-1">
                     <Label>Value (0-100)</Label>
@@ -389,14 +438,25 @@ export default function RadarAdmin() {
                 <div key={index} className="flex gap-4 items-end p-4 border rounded-lg">
                   <div className="flex-1">
                     <Label>Symbol</Label>
-                    <Input
+                    <Select
                       value={opportunity.symbol}
-                      onChange={(e) => {
+                      onValueChange={(value) => {
                         const newOpportunities = [...formData.opportunities];
-                        newOpportunities[index].symbol = e.target.value;
+                        newOpportunities[index].symbol = value;
                         setFormData({ ...formData, opportunities: newOpportunities });
                       }}
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select symbol" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getAllSymbols().map((symbol) => (
+                          <SelectItem key={symbol} value={symbol}>
+                            {symbol}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex-1">
                     <Label>Price</Label>
@@ -423,14 +483,25 @@ export default function RadarAdmin() {
                   </div>
                   <div className="flex-1">
                     <Label>Strategy</Label>
-                    <Input
+                    <Select
                       value={opportunity.strategy}
-                      onChange={(e) => {
+                      onValueChange={(value) => {
                         const newOpportunities = [...formData.opportunities];
-                        newOpportunities[index].strategy = e.target.value;
+                        newOpportunities[index].strategy = value;
                         setFormData({ ...formData, opportunities: newOpportunities });
                       }}
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select strategy" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {strategies.map((strategy) => (
+                          <SelectItem key={strategy.name} value={strategy.name}>
+                            {strategy.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="flex-1">
                     <Label>Signal</Label>

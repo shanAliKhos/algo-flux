@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Loader2, Save, Plus, Trash2, Compass } from 'lucide-react';
-import { adminApi } from '@/lib/api';
+import { adminApi, apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 
@@ -47,10 +47,46 @@ const personalityIcons = [
   { value: 'Zap', label: 'Zap' },
 ];
 
+const assetCategories = [
+  'Forex',
+  'Crypto',
+  'Stocks',
+  'Gold',
+  'Indices',
+  'Commodities',
+  'Bonds',
+  'Currencies',
+];
+
+interface Strategy {
+  id?: string;
+  name: string;
+  status: 'active' | 'waiting' | 'cooling';
+  accuracy: number;
+  confidence: 'high' | 'medium' | 'low';
+  bias: string;
+  instruments: string[];
+}
+
 export default function ConditionsAdmin() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [editingSection, setEditingSection] = useState<string | null>(null);
+
+  // Fetch strategies for the select dropdown
+  const { data: strategies = [] } = useQuery<Strategy[]>({
+    queryKey: ['strategies'],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get<Strategy[]>('/admin/strategies');
+        return response || [];
+      } catch (error) {
+        console.error('Failed to fetch strategies:', error);
+        return [];
+      }
+    },
+    retry: 1,
+  });
 
   // Fetch Conditions data
   const { data, isLoading, error } = useQuery({
@@ -373,14 +409,25 @@ export default function ConditionsAdmin() {
               <div className="flex-1 grid grid-cols-3 gap-4">
                 <div>
                   <Label>Asset</Label>
-                  <Input
+                  <Select
                     value={item.asset}
-                    onChange={(e) => {
+                    onValueChange={(value) => {
                       const updated = [...formData.behaviorMap];
-                      updated[index].asset = e.target.value;
+                      updated[index].asset = value;
                       setFormData({ ...formData, behaviorMap: updated });
                     }}
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select asset" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {assetCategories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div>
                   <Label>Behavior</Label>
@@ -436,14 +483,25 @@ export default function ConditionsAdmin() {
               <div className="flex items-center justify-between">
                 <div className="flex-1">
                   <Label>Asset</Label>
-                  <Input
+                  <Select
                     value={alignment.asset}
-                    onChange={(e) => {
+                    onValueChange={(value) => {
                       const updated = [...formData.strategyAlignment];
-                      updated[alignmentIndex].asset = e.target.value;
+                      updated[alignmentIndex].asset = value;
                       setFormData({ ...formData, strategyAlignment: updated });
                     }}
-                  />
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Select asset" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {assetCategories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <Button
                   variant="ghost"
@@ -463,15 +521,25 @@ export default function ConditionsAdmin() {
                     <div className="flex-1 grid grid-cols-3 gap-4">
                       <div>
                         <Label className="text-xs">Name</Label>
-                        <Input
+                        <Select
                           value={strategy.name}
-                          onChange={(e) => {
+                          onValueChange={(value) => {
                             const updated = [...formData.strategyAlignment];
-                            updated[alignmentIndex].strategies[strategyIndex].name =
-                              e.target.value;
+                            updated[alignmentIndex].strategies[strategyIndex].name = value;
                             setFormData({ ...formData, strategyAlignment: updated });
                           }}
-                        />
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select strategy" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {strategies.map((s) => (
+                              <SelectItem key={s.name} value={s.name}>
+                                {s.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div>
                         <Label className="text-xs">Status</Label>

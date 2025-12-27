@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Loader2, Save, Plus, Trash2, Edit2, Users } from 'lucide-react';
-import { adminApi } from '@/lib/api';
+import { adminApi, apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { getAllSymbols } from '@/lib/trading-pairs';
@@ -101,10 +101,35 @@ interface AccountRoomsData {
   };
 }
 
+interface Strategy {
+  id?: string;
+  name: string;
+  status: 'active' | 'waiting' | 'cooling';
+  accuracy: number;
+  confidence: 'high' | 'medium' | 'low';
+  bias: string;
+  instruments: string[];
+}
+
 export default function AccountRoomsAdmin() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [editingSection, setEditingSection] = useState<string | null>(null);
+
+  // Fetch strategies for the select dropdown
+  const { data: strategies = [] } = useQuery<Strategy[]>({
+    queryKey: ['strategies'],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get<Strategy[]>('/admin/strategies');
+        return response || [];
+      } catch (error) {
+        console.error('Failed to fetch strategies:', error);
+        return [];
+      }
+    },
+    retry: 1,
+  });
 
   // Fetch Account Rooms data
   const { data, isLoading, error } = useQuery({
@@ -739,18 +764,28 @@ export default function AccountRoomsAdmin() {
                 <Label>Strategy Utilization</Label>
                 {formData.proRetail.strategyUtilization.map((strategy, index) => (
                   <div key={index} className="flex gap-2">
-                    <Input
-                      placeholder="Strategy Name"
+                    <Select
                       value={strategy.name}
-                      onChange={(e) => {
+                      onValueChange={(value) => {
                         const updated = [...formData.proRetail.strategyUtilization];
-                        updated[index] = { ...strategy, name: e.target.value };
+                        updated[index] = { ...strategy, name: value };
                         setFormData({
                           ...formData,
                           proRetail: { ...formData.proRetail, strategyUtilization: updated },
                         });
                       }}
-                    />
+                    >
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Select strategy" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {strategies.map((s) => (
+                          <SelectItem key={s.name} value={s.name}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Input
                       type="number"
                       placeholder="Percentage"
@@ -884,31 +919,48 @@ export default function AccountRoomsAdmin() {
                 <Label>Strategy Confidence</Label>
                 {formData.proRetail.strategyConfidence.map((confidence, index) => (
                   <div key={index} className="flex gap-2">
-                    <Input
-                      placeholder="Strategy Name"
+                    <Select
                       value={confidence.name}
-                      onChange={(e) => {
+                      onValueChange={(value) => {
                         const updated = [...formData.proRetail.strategyConfidence];
-                        updated[index] = { ...confidence, name: e.target.value };
+                        updated[index] = { ...confidence, name: value };
                         setFormData({
                           ...formData,
                           proRetail: { ...formData.proRetail, strategyConfidence: updated },
                         });
                       }}
-                    />
-                    <Input
-                      placeholder="Confidence (High/Medium/Low)"
+                    >
+                      <SelectTrigger className="w-[200px]">
+                        <SelectValue placeholder="Select strategy" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {strategies.map((s) => (
+                          <SelectItem key={s.name} value={s.name}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <Select
                       value={confidence.confidence}
-                      onChange={(e) => {
+                      onValueChange={(value) => {
                         const updated = [...formData.proRetail.strategyConfidence];
-                        updated[index] = { ...confidence, confidence: e.target.value };
+                        updated[index] = { ...confidence, confidence: value };
                         setFormData({
                           ...formData,
                           proRetail: { ...formData.proRetail, strategyConfidence: updated },
                         });
                       }}
-                      className="w-48"
-                    />
+                    >
+                      <SelectTrigger className="w-48">
+                        <SelectValue placeholder="Select confidence" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="High">High</SelectItem>
+                        <SelectItem value="Medium">Medium</SelectItem>
+                        <SelectItem value="Low">Low</SelectItem>
+                      </SelectContent>
+                    </Select>
                     <Button
                       variant="ghost"
                       size="icon"
@@ -1307,19 +1359,28 @@ export default function AccountRoomsAdmin() {
                 <Label>Alpha Sources</Label>
                 {formData.investor.alphaSources.map((source, index) => (
                   <div key={index} className="flex gap-2">
-                    <Input
-                      placeholder="Source Name"
+                    <Select
                       value={source.name}
-                      onChange={(e) => {
+                      onValueChange={(value) => {
                         const updated = [...formData.investor.alphaSources];
-                        updated[index] = { ...source, name: e.target.value };
+                        updated[index] = { ...source, name: value };
                         setFormData({
                           ...formData,
                           investor: { ...formData.investor, alphaSources: updated },
                         });
                       }}
-                      className="flex-1"
-                    />
+                    >
+                      <SelectTrigger className="flex-1">
+                        <SelectValue placeholder="Select strategy" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {strategies.map((s) => (
+                          <SelectItem key={s.name} value={s.name}>
+                            {s.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <Input
                       type="number"
                       step="0.1"

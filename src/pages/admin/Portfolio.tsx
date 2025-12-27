@@ -4,9 +4,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { useToast } from '@/hooks/use-toast';
 import { Briefcase, Loader2, Save, Plus, Trash2, X } from 'lucide-react';
-import { adminApi } from '@/lib/api';
+import { adminApi, apiClient } from '@/lib/api';
 
 interface PortfolioData {
   topStats: {
@@ -66,10 +73,57 @@ const defaultPortfolioData: PortfolioData = {
   ],
 };
 
+const assetCategories = [
+  'Forex',
+  'Crypto',
+  'Stocks',
+  'Gold',
+  'Indices',
+  'Commodities',
+  'Bonds',
+  'Currencies',
+];
+
+const regions = [
+  'US',
+  'Europe',
+  'Asia',
+  'EM',
+  'Americas',
+  'APAC',
+  'Middle East',
+  'Africa',
+];
+
+interface Strategy {
+  id?: string;
+  name: string;
+  status: 'active' | 'waiting' | 'cooling';
+  accuracy: number;
+  confidence: 'high' | 'medium' | 'low';
+  bias: string;
+  instruments: string[];
+}
+
 export default function PortfolioAdmin() {
   const [portfolioData, setPortfolioData] = useState<PortfolioData>(defaultPortfolioData);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+
+  // Fetch strategies for the select dropdown
+  const { data: strategies = [] } = useQuery<Strategy[]>({
+    queryKey: ['strategies'],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get<Strategy[]>('/admin/strategies');
+        return response || [];
+      } catch (error) {
+        console.error('Failed to fetch strategies:', error);
+        return [];
+      }
+    },
+    retry: 1,
+  });
 
   const { isLoading } = useQuery({
     queryKey: ['portfolio'],
@@ -368,11 +422,21 @@ export default function PortfolioAdmin() {
               <div className="grid grid-cols-3 gap-4">
                 <div className="space-y-2">
                   <Label>Category</Label>
-                  <Input
+                  <Select
                     value={tile.category}
-                    onChange={(e) => handleUpdateExposureTile(index, 'category', e.target.value)}
-                    className="bg-background border-input text-foreground"
-                  />
+                    onValueChange={(value) => handleUpdateExposureTile(index, 'category', value)}
+                  >
+                    <SelectTrigger className="bg-background border-input text-foreground">
+                      <SelectValue placeholder="Select category" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {assetCategories.map((category) => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Allocation (%)</Label>
@@ -424,11 +488,21 @@ export default function PortfolioAdmin() {
               <div className="grid grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <Label>Region</Label>
-                  <Input
+                  <Select
                     value={region.region}
-                    onChange={(e) => handleUpdateRegionExposure(index, 'region', e.target.value)}
-                    className="bg-background border-input text-foreground"
-                  />
+                    onValueChange={(value) => handleUpdateRegionExposure(index, 'region', value)}
+                  >
+                    <SelectTrigger className="bg-background border-input text-foreground">
+                      <SelectValue placeholder="Select region" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {regions.map((r) => (
+                        <SelectItem key={r} value={r}>
+                          {r}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </div>
                 <div className="space-y-2">
                   <Label>Allocation (%)</Label>

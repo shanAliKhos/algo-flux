@@ -4,8 +4,15 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Loader2, Save, Plus, Trash2, Edit2, TrendingUp } from 'lucide-react';
-import { adminApi } from '@/lib/api';
+import { adminApi, apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { RiskMetricsCards } from '@/components/ui/PerformanceCharts';
 
@@ -63,10 +70,35 @@ interface PerformanceData {
   drawdownData: DrawdownData;
 }
 
+interface Strategy {
+  id?: string;
+  name: string;
+  status: 'active' | 'waiting' | 'cooling';
+  accuracy: number;
+  confidence: 'high' | 'medium' | 'low';
+  bias: string;
+  instruments: string[];
+}
+
 export default function Performance() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [editingSection, setEditingSection] = useState<string | null>(null);
+
+  // Fetch strategies for the select dropdown
+  const { data: strategies = [] } = useQuery<Strategy[]>({
+    queryKey: ['strategies'],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get<Strategy[]>('/admin/strategies');
+        return response || [];
+      } catch (error) {
+        console.error('Failed to fetch strategies:', error);
+        return [];
+      }
+    },
+    retry: 1,
+  });
 
   // Fetch Performance data
   const { data, isLoading, error } = useQuery({
@@ -749,10 +781,21 @@ export default function Performance() {
                 <div key={index} className="grid gap-4 md:grid-cols-5 p-4 border rounded-lg">
                   <div className="space-y-2">
                     <Label>Strategy</Label>
-                    <Input
+                    <Select
                       value={item.strategy}
-                      onChange={(e) => updateStrategyContribution(index, 'strategy', e.target.value)}
-                    />
+                      onValueChange={(value) => updateStrategyContribution(index, 'strategy', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select strategy" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {strategies.map((strategy) => (
+                          <SelectItem key={strategy.name} value={strategy.name}>
+                            {strategy.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Return (%)</Label>

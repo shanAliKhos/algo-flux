@@ -17,8 +17,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { Loader2, Brain, Save, Plus, Trash2, Edit2, Radar } from 'lucide-react';
-import { adminApi } from '@/lib/api';
+import { adminApi, apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
+import { getAllSymbols } from '@/lib/trading-pairs';
 
 interface MoodData {
   forex: number;
@@ -60,10 +61,35 @@ interface MarketBrainData {
   instruments: InstrumentData[];
 }
 
+interface Strategy {
+  id?: string;
+  name: string;
+  status: 'active' | 'waiting' | 'cooling';
+  accuracy: number;
+  confidence: 'high' | 'medium' | 'low';
+  bias: string;
+  instruments: string[];
+}
+
 export default function MarketBrain() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [editingSection, setEditingSection] = useState<string | null>(null);
+
+  // Fetch strategies for the select dropdown
+  const { data: strategies = [] } = useQuery<Strategy[]>({
+    queryKey: ['strategies'],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get<Strategy[]>('/admin/strategies');
+        return response || [];
+      } catch (error) {
+        console.error('Failed to fetch strategies:', error);
+        return [];
+      }
+    },
+    retry: 1,
+  });
 
   // Fetch Market Brain data
   const { data, isLoading, error } = useQuery({
@@ -752,10 +778,21 @@ export default function MarketBrain() {
                     <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
                       <div className="space-y-2">
                         <Label>Symbol</Label>
-                        <Input
+                        <Select
                           value={instrument.symbol}
-                          onChange={(e) => updateInstrument(index, 'symbol', e.target.value)}
-                        />
+                          onValueChange={(value) => updateInstrument(index, 'symbol', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select symbol" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {getAllSymbols().map((symbol) => (
+                              <SelectItem key={symbol} value={symbol}>
+                                {symbol}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2">
                         <Label>Price</Label>
@@ -802,10 +839,21 @@ export default function MarketBrain() {
                       </div>
                       <div className="space-y-2">
                         <Label>Active Strategy</Label>
-                        <Input
+                        <Select
                           value={instrument.activeStrategy}
-                          onChange={(e) => updateInstrument(index, 'activeStrategy', e.target.value)}
-                        />
+                          onValueChange={(value) => updateInstrument(index, 'activeStrategy', value)}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select strategy" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {strategies.map((strategy) => (
+                              <SelectItem key={strategy.name} value={strategy.name}>
+                                {strategy.name}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
                       </div>
                       <div className="space-y-2 md:col-span-3">
                         <Label>Threats (comma-separated)</Label>

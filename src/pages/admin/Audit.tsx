@@ -4,10 +4,18 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
 import { Loader2, Save, Plus, Trash2, Edit2, Shield } from 'lucide-react';
-import { adminApi } from '@/lib/api';
+import { adminApi, apiClient } from '@/lib/api';
 import { useToast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
+import { getAllSymbols } from '@/lib/trading-pairs';
 
 interface AuditData {
   recentExecutions: Array<{
@@ -49,10 +57,35 @@ interface AuditData {
   };
 }
 
+interface Strategy {
+  id?: string;
+  name: string;
+  status: 'active' | 'waiting' | 'cooling';
+  accuracy: number;
+  confidence: 'high' | 'medium' | 'low';
+  bias: string;
+  instruments: string[];
+}
+
 export default function AuditAdmin() {
   const queryClient = useQueryClient();
   const { toast } = useToast();
   const [editingSection, setEditingSection] = useState<string | null>(null);
+
+  // Fetch strategies for the select dropdown
+  const { data: strategies = [] } = useQuery<Strategy[]>({
+    queryKey: ['strategies'],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get<Strategy[]>('/admin/strategies');
+        return response || [];
+      } catch (error) {
+        console.error('Failed to fetch strategies:', error);
+        return [];
+      }
+    },
+    retry: 1,
+  });
 
   // Fetch Audit data
   const { data, isLoading, error } = useQuery({
@@ -226,36 +259,68 @@ export default function AuditAdmin() {
                   </div>
                   <div className="space-y-2">
                     <Label>Strategy</Label>
-                    <Input
+                    <Select
                       value={exec.strategy}
-                      onChange={(e) => {
+                      onValueChange={(value) => {
                         const updated = [...formData.recentExecutions];
-                        updated[index] = { ...exec, strategy: e.target.value };
+                        updated[index] = { ...exec, strategy: value };
                         setFormData({ ...formData, recentExecutions: updated });
                       }}
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select strategy" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {strategies.map((strategy) => (
+                          <SelectItem key={strategy.name} value={strategy.name}>
+                            {strategy.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Symbol</Label>
-                    <Input
+                    <Select
                       value={exec.symbol}
-                      onChange={(e) => {
+                      onValueChange={(value) => {
                         const updated = [...formData.recentExecutions];
-                        updated[index] = { ...exec, symbol: e.target.value };
+                        updated[index] = { ...exec, symbol: value };
                         setFormData({ ...formData, recentExecutions: updated });
                       }}
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select symbol" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getAllSymbols().map((symbol) => (
+                          <SelectItem key={symbol} value={symbol}>
+                            {symbol}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Direction</Label>
-                    <Input
+                    <Select
                       value={exec.direction}
-                      onChange={(e) => {
+                      onValueChange={(value) => {
                         const updated = [...formData.recentExecutions];
-                        updated[index] = { ...exec, direction: e.target.value };
+                        updated[index] = { ...exec, direction: value };
                         setFormData({ ...formData, recentExecutions: updated });
                       }}
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select direction" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Long">Long</SelectItem>
+                        <SelectItem value="Short">Short</SelectItem>
+                        <SelectItem value="Buy">Buy</SelectItem>
+                        <SelectItem value="Sell">Sell</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Size</Label>
@@ -282,14 +347,25 @@ export default function AuditAdmin() {
                   <div className="space-y-2">
                     <Label>Status</Label>
                     <div className="flex gap-2">
-                      <Input
+                      <Select
                         value={exec.status}
-                        onChange={(e) => {
+                        onValueChange={(value) => {
                           const updated = [...formData.recentExecutions];
-                          updated[index] = { ...exec, status: e.target.value };
+                          updated[index] = { ...exec, status: value };
                           setFormData({ ...formData, recentExecutions: updated });
                         }}
-                      />
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Filled">Filled</SelectItem>
+                          <SelectItem value="Pending">Pending</SelectItem>
+                          <SelectItem value="Rejected">Rejected</SelectItem>
+                          <SelectItem value="Cancelled">Cancelled</SelectItem>
+                          <SelectItem value="Partial">Partial</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -386,14 +462,25 @@ export default function AuditAdmin() {
                 <div key={index} className="grid gap-4 md:grid-cols-5 border p-4 rounded-lg">
                   <div className="space-y-2">
                     <Label>Name</Label>
-                    <Input
+                    <Select
                       value={strat.name}
-                      onChange={(e) => {
+                      onValueChange={(value) => {
                         const updated = [...formData.performanceByStrategy];
-                        updated[index] = { ...strat, name: e.target.value };
+                        updated[index] = { ...strat, name: value };
                         setFormData({ ...formData, performanceByStrategy: updated });
                       }}
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select strategy" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {strategies.map((strategy) => (
+                          <SelectItem key={strategy.name} value={strategy.name}>
+                            {strategy.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Win Rate (%)</Label>
@@ -679,37 +766,71 @@ export default function AuditAdmin() {
                   </div>
                   <div className="space-y-2">
                     <Label>Type</Label>
-                    <Input
+                    <Select
                       value={anomaly.type}
-                      onChange={(e) => {
+                      onValueChange={(value) => {
                         const updated = [...formData.anomalies];
-                        updated[index] = { ...anomaly, type: e.target.value };
+                        updated[index] = { ...anomaly, type: value };
                         setFormData({ ...formData, anomalies: updated });
                       }}
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Volatility Spike">Volatility Spike</SelectItem>
+                        <SelectItem value="Price Anomaly">Price Anomaly</SelectItem>
+                        <SelectItem value="Volume Spike">Volume Spike</SelectItem>
+                        <SelectItem value="Latency Issue">Latency Issue</SelectItem>
+                        <SelectItem value="Execution Error">Execution Error</SelectItem>
+                        <SelectItem value="Data Quality">Data Quality</SelectItem>
+                        <SelectItem value="System Alert">System Alert</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Asset</Label>
-                    <Input
+                    <Select
                       value={anomaly.asset}
-                      onChange={(e) => {
+                      onValueChange={(value) => {
                         const updated = [...formData.anomalies];
-                        updated[index] = { ...anomaly, asset: e.target.value };
+                        updated[index] = { ...anomaly, asset: value };
                         setFormData({ ...formData, anomalies: updated });
                       }}
-                    />
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select asset" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {getAllSymbols().map((symbol) => (
+                          <SelectItem key={symbol} value={symbol}>
+                            {symbol}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                   </div>
                   <div className="space-y-2">
                     <Label>Severity</Label>
                     <div className="flex gap-2">
-                      <Input
+                      <Select
                         value={anomaly.severity}
-                        onChange={(e) => {
+                        onValueChange={(value) => {
                           const updated = [...formData.anomalies];
-                          updated[index] = { ...anomaly, severity: e.target.value };
+                          updated[index] = { ...anomaly, severity: value };
                           setFormData({ ...formData, anomalies: updated });
                         }}
-                      />
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select severity" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="low">Low</SelectItem>
+                          <SelectItem value="medium">Medium</SelectItem>
+                          <SelectItem value="high">High</SelectItem>
+                          <SelectItem value="critical">Critical</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <Button
                         variant="ghost"
                         size="icon"
