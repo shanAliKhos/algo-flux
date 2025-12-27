@@ -252,6 +252,51 @@ class CustomReportingDto {
   formats: string[];
 }
 
+class AIPreferenceTunerDto {
+  @IsString()
+  @IsNotEmpty()
+  riskAppetite: string;
+
+  @IsNumber()
+  @Min(0)
+  @Max(100)
+  exposureLimit: number;
+}
+
+class DCNPipelineAccessItemDto {
+  @IsString()
+  @IsNotEmpty()
+  label: string;
+
+  @IsString()
+  @IsNotEmpty()
+  status: string;
+}
+
+class ExecutionVenueDetailDto {
+  @IsString()
+  @IsNotEmpty()
+  venue: string;
+
+  @IsString()
+  @IsNotEmpty()
+  fill: string;
+}
+
+class MarketImpactReportDto {
+  @IsString()
+  @IsNotEmpty()
+  avgSlippage: string;
+
+  @IsString()
+  @IsNotEmpty()
+  fillRate: string;
+
+  @IsString()
+  @IsNotEmpty()
+  priceImpact: string;
+}
+
 class VipUltraDto {
   @IsString()
   @IsNotEmpty()
@@ -280,6 +325,30 @@ class VipUltraDto {
   @ValidateNested()
   @Type(() => CustomReportingDto)
   customReporting: CustomReportingDto;
+
+  @IsNotEmpty()
+  @ValidateNested()
+  @Type(() => AIPreferenceTunerDto)
+  aiPreferenceTuner: AIPreferenceTunerDto;
+
+  @IsArray()
+  @IsString({ each: true })
+  manualOverrideOptions: string[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DCNPipelineAccessItemDto)
+  dcnPipelineAccess: DCNPipelineAccessItemDto[];
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ExecutionVenueDetailDto)
+  executionVenueDetails: ExecutionVenueDetailDto[];
+
+  @IsNotEmpty()
+  @ValidateNested()
+  @Type(() => MarketImpactReportDto)
+  marketImpactReport: MarketImpactReportDto;
 }
 
 export class AccountRoomsDto {

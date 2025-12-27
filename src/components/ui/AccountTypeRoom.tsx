@@ -444,119 +444,160 @@ export function AccountTypeRoom({ type, className }: AccountTypeRoomProps) {
     );
   };
 
-  const renderVipUltra = () => (
-    <div className="space-y-6">
-      {/* AI Preference Tuner */}
-      <div className="glass rounded-2xl p-6">
-        <div className="flex items-center gap-3 mb-6">
-          <Sliders className="w-5 h-5 text-primary" />
-          <span className="font-display font-semibold">AI Preference Tuner</span>
-        </div>
-        <div className="space-y-6">
-          <div>
-            <div className="flex justify-between text-sm mb-2">
-              <span>Risk Appetite</span>
-              <span className="text-primary">Balanced</span>
-            </div>
-            <div className="relative">
-              <div className="h-2 bg-muted rounded-full">
-                <div className="absolute left-1/2 top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary border-2 border-primary-foreground shadow-lg" />
-              </div>
-              <div className="flex justify-between text-xs text-muted-foreground mt-1">
-                <span>Conservative</span>
-                <span>Aggressive</span>
-              </div>
-            </div>
+  const renderVipUltra = () => {
+    const data = accountRoomsData?.vipUltra;
+    
+    // Default values
+    const defaultRiskAppetite = data?.aiPreferenceTuner?.riskAppetite || 'Balanced';
+    const defaultExposureLimit = data?.aiPreferenceTuner?.exposureLimit ?? 60;
+    const defaultManualOverrides = data?.manualOverrideOptions || [
+      'Pause All Trading',
+      'Force Close All',
+      'Blacklist Instrument',
+      'Whitelist Only Mode',
+    ];
+    const defaultDCNPipeline = data?.dcnPipelineAccess || [
+      { label: 'Decision Layer', status: '7 signals' },
+      { label: 'Confirmation', status: '5/6 passed' },
+      { label: 'Navigation', status: 'Active' },
+    ];
+    const defaultExecutionVenues = data?.executionVenueDetails || [
+      { venue: 'Prime Broker A', fill: '98.2%' },
+      { venue: 'Dark Pool', fill: '1.5%' },
+      { venue: 'Direct Exchange', fill: '0.3%' },
+    ];
+    const defaultMarketImpact = data?.marketImpactReport || {
+      avgSlippage: '0.02 pips',
+      fillRate: '99.8%',
+      priceImpact: 'Negligible',
+    };
+
+    // Calculate slider position for risk appetite
+    const getRiskAppetitePosition = () => {
+      switch (defaultRiskAppetite) {
+        case 'Conservative':
+          return '10%';
+        case 'Balanced':
+          return '50%';
+        case 'Aggressive':
+          return '90%';
+        default:
+          return '50%';
+      }
+    };
+
+    return (
+      <div className="space-y-6">
+        {/* AI Preference Tuner */}
+        <div className="glass rounded-2xl p-6">
+          <div className="flex items-center gap-3 mb-6">
+            <Sliders className="w-5 h-5 text-primary" />
+            <span className="font-display font-semibold">AI Preference Tuner</span>
           </div>
-          <div>
-            <div className="flex justify-between text-sm mb-2">
-              <span>Exposure Limit</span>
-              <span className="text-primary">60%</span>
+          <div className="space-y-6">
+            <div>
+              <div className="flex justify-between text-sm mb-2">
+                <span>Risk Appetite</span>
+                <span className="text-primary">{defaultRiskAppetite}</span>
+              </div>
+              <div className="relative">
+                <div className="h-2 bg-muted rounded-full">
+                  <div
+                    className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary border-2 border-primary-foreground shadow-lg"
+                    style={{ left: getRiskAppetitePosition() }}
+                  />
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground mt-1">
+                  <span>Conservative</span>
+                  <span>Aggressive</span>
+                </div>
+              </div>
             </div>
-            <div className="relative">
-              <div className="h-2 bg-muted rounded-full">
-                <div className="h-full bg-primary/30 rounded-full" style={{ width: "60%" }}>
-                  <div className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary border-2 border-primary-foreground shadow-lg" style={{ left: "58%" }} />
+            <div>
+              <div className="flex justify-between text-sm mb-2">
+                <span>Exposure Limit</span>
+                <span className="text-primary">{defaultExposureLimit}%</span>
+              </div>
+              <div className="relative">
+                <div className="h-2 bg-muted rounded-full">
+                  <div className="h-full bg-primary/30 rounded-full" style={{ width: `${defaultExposureLimit}%` }}>
+                    <div
+                      className="absolute top-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-primary border-2 border-primary-foreground shadow-lg"
+                      style={{ left: `${Math.max(0, Math.min(100, defaultExposureLimit - 2))}%` }}
+                    />
+                  </div>
                 </div>
               </div>
             </div>
           </div>
         </div>
-      </div>
 
-      <div className="grid md:grid-cols-2 gap-4">
-        {/* Manual Override */}
-        <div className="glass rounded-xl p-4">
-          <div className="flex items-center gap-2 mb-3">
-            <Settings className="w-4 h-4 text-warning" />
-            <span className="text-sm">Manual Override Options</span>
-            <span className="ml-auto text-xs text-muted-foreground">(View Only)</span>
-          </div>
-          <div className="space-y-2">
-            {["Pause All Trading", "Force Close All", "Blacklist Instrument", "Whitelist Only Mode"].map((opt, i) => (
-              <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/30">
-                <span className="text-xs">{opt}</span>
-                <Eye className="w-3 h-3 text-muted-foreground" />
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* DCN Per Trade */}
-        <div className="glass rounded-xl p-4">
-          <div className="text-sm text-muted-foreground mb-3">Full DCN Pipeline Access</div>
-          <div className="space-y-2">
-            {[
-              { label: "Decision Layer", status: "7 signals" },
-              { label: "Confirmation", status: "5/6 passed" },
-              { label: "Navigation", status: "Active" },
-            ].map((item, i) => (
-              <div key={i} className="flex justify-between text-xs p-2 rounded bg-card border border-border">
-                <span>{item.label}</span>
-                <span className="text-primary">{item.status}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Execution Venues */}
-        <div className="glass rounded-xl p-4">
-          <div className="text-sm text-muted-foreground mb-3">Execution Venue Details</div>
-          <div className="space-y-2">
-            {[
-              { venue: "Prime Broker A", fill: "98.2%" },
-              { venue: "Dark Pool", fill: "1.5%" },
-              { venue: "Direct Exchange", fill: "0.3%" },
-            ].map((v, i) => (
-              <div key={i} className="flex justify-between text-xs">
-                <span>{v.venue}</span>
-                <span className="text-primary">{v.fill}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        {/* Market Impact */}
-        <div className="glass rounded-xl p-4">
-          <div className="text-sm text-muted-foreground mb-3">Market Impact Report</div>
-          <div className="space-y-2">
-            <div className="flex justify-between text-xs">
-              <span>Avg Slippage</span>
-              <span className="text-primary">0.02 pips</span>
+        <div className="grid md:grid-cols-2 gap-4">
+          {/* Manual Override */}
+          <div className="glass rounded-xl p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Settings className="w-4 h-4 text-warning" />
+              <span className="text-sm">Manual Override Options</span>
+              <span className="ml-auto text-xs text-muted-foreground">(View Only)</span>
             </div>
-            <div className="flex justify-between text-xs">
-              <span>Fill Rate</span>
-              <span className="text-primary">99.8%</span>
+            <div className="space-y-2">
+              {defaultManualOverrides.filter(Boolean).map((opt, i) => (
+                <div key={i} className="flex items-center justify-between p-2 rounded bg-muted/30">
+                  <span className="text-xs">{opt}</span>
+                  <Eye className="w-3 h-3 text-muted-foreground" />
+                </div>
+              ))}
             </div>
-            <div className="flex justify-between text-xs">
-              <span>Price Impact</span>
-              <span className="text-primary">Negligible</span>
+          </div>
+
+          {/* DCN Pipeline Access */}
+          <div className="glass rounded-xl p-4">
+            <div className="text-sm text-muted-foreground mb-3">Full DCN Pipeline Access</div>
+            <div className="space-y-2">
+              {defaultDCNPipeline.filter(item => item && item.label).map((item, i) => (
+                <div key={i} className="flex justify-between text-xs p-2 rounded bg-card border border-border">
+                  <span>{item.label}</span>
+                  <span className="text-primary">{item.status}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Execution Venues */}
+          <div className="glass rounded-xl p-4">
+            <div className="text-sm text-muted-foreground mb-3">Execution Venue Details</div>
+            <div className="space-y-2">
+              {defaultExecutionVenues.filter(item => item && item.venue).map((v, i) => (
+                <div key={i} className="flex justify-between text-xs">
+                  <span>{v.venue}</span>
+                  <span className="text-primary">{v.fill}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Market Impact */}
+          <div className="glass rounded-xl p-4">
+            <div className="text-sm text-muted-foreground mb-3">Market Impact Report</div>
+            <div className="space-y-2">
+              <div className="flex justify-between text-xs">
+                <span>Avg Slippage</span>
+                <span className="text-primary">{defaultMarketImpact.avgSlippage}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span>Fill Rate</span>
+                <span className="text-primary">{defaultMarketImpact.fillRate}</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span>Price Impact</span>
+                <span className="text-primary">{defaultMarketImpact.priceImpact}</span>
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   // Show loading state only on initial load, not on refetch
   if (isLoading && !accountRoomsData) {

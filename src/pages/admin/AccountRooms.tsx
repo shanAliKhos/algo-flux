@@ -98,6 +98,24 @@ interface AccountRoomsData {
       enabled: boolean;
       formats: string[];
     };
+    aiPreferenceTuner: {
+      riskAppetite: string;
+      exposureLimit: number;
+    };
+    manualOverrideOptions: string[];
+    dcnPipelineAccess: Array<{
+      label: string;
+      status: string;
+    }>;
+    executionVenueDetails: Array<{
+      venue: string;
+      fill: string;
+    }>;
+    marketImpactReport: {
+      avgSlippage: string;
+      fillRate: string;
+      priceImpact: string;
+    };
   };
 }
 
@@ -238,6 +256,26 @@ export default function AccountRoomsAdmin() {
                 enabled: true,
                 formats: ['PDF', 'Excel', 'JSON', 'CSV'],
               },
+              aiPreferenceTuner: {
+                riskAppetite: 'Balanced',
+                exposureLimit: 60,
+              },
+              manualOverrideOptions: ['Pause All Trading', 'Force Close All', 'Blacklist Instrument', 'Whitelist Only Mode'],
+              dcnPipelineAccess: [
+                { label: 'Decision Layer', status: '7 signals' },
+                { label: 'Confirmation', status: '5/6 passed' },
+                { label: 'Navigation', status: 'Active' },
+              ],
+              executionVenueDetails: [
+                { venue: 'Prime Broker A', fill: '98.2%' },
+                { venue: 'Dark Pool', fill: '1.5%' },
+                { venue: 'Direct Exchange', fill: '0.3%' },
+              ],
+              marketImpactReport: {
+                avgSlippage: '0.02 pips',
+                fillRate: '99.8%',
+                priceImpact: 'Negligible',
+              },
             },
           };
         }
@@ -253,13 +291,32 @@ export default function AccountRoomsAdmin() {
   // Initialize form data when data loads
   useEffect(() => {
     if (data && !formData) {
-      setFormData(JSON.parse(JSON.stringify(data))); // Deep copy
+      const dataCopy = JSON.parse(JSON.stringify(data)); // Deep copy
+      // Ensure all VIP Ultra fields exist with defaults
+      if (dataCopy.vipUltra) {
+        if (!dataCopy.vipUltra.aiPreferenceTuner) {
+          dataCopy.vipUltra.aiPreferenceTuner = { riskAppetite: 'Balanced', exposureLimit: 60 };
+        }
+        if (!dataCopy.vipUltra.manualOverrideOptions) {
+          dataCopy.vipUltra.manualOverrideOptions = [];
+        }
+        if (!dataCopy.vipUltra.dcnPipelineAccess) {
+          dataCopy.vipUltra.dcnPipelineAccess = [];
+        }
+        if (!dataCopy.vipUltra.executionVenueDetails) {
+          dataCopy.vipUltra.executionVenueDetails = [];
+        }
+        if (!dataCopy.vipUltra.marketImpactReport) {
+          dataCopy.vipUltra.marketImpactReport = { avgSlippage: '', fillRate: '', priceImpact: '' };
+        }
+      }
+      setFormData(dataCopy);
     }
   }, [data, formData]);
 
   const updateMutation = useMutation({
     mutationFn: async (config: AccountRoomsData) => {
-      // Ensure all active fields are proper booleans
+      // Ensure all active fields are proper booleans and all VIP Ultra fields exist
       const cleanedConfig = {
         ...config,
         proRetail: {
@@ -268,6 +325,22 @@ export default function AccountRoomsAdmin() {
             symbol: item.symbol,
             active: Boolean(item.active),
           })),
+        },
+        vipUltra: {
+          ...config.vipUltra,
+          // Ensure all new fields exist with defaults if missing
+          aiPreferenceTuner: config.vipUltra.aiPreferenceTuner || {
+            riskAppetite: 'Balanced',
+            exposureLimit: 60,
+          },
+          manualOverrideOptions: config.vipUltra.manualOverrideOptions || [],
+          dcnPipelineAccess: config.vipUltra.dcnPipelineAccess || [],
+          executionVenueDetails: config.vipUltra.executionVenueDetails || [],
+          marketImpactReport: config.vipUltra.marketImpactReport || {
+            avgSlippage: '',
+            fillRate: '',
+            priceImpact: '',
+          },
         },
       };
       return await adminApi.updateAccountRooms(cleanedConfig);
@@ -281,9 +354,11 @@ export default function AccountRoomsAdmin() {
       setEditingSection(null);
     },
     onError: (error: any) => {
+      console.error('Save error:', error);
+      const errorMessage = error?.response?.data?.message || error?.message || 'Failed to update account rooms data';
       toast({
         title: 'Error',
-        description: error.message || 'Failed to update account rooms data',
+        description: errorMessage,
         variant: 'destructive',
       });
     },
@@ -291,7 +366,33 @@ export default function AccountRoomsAdmin() {
 
   const handleSave = () => {
     if (formData) {
-      updateMutation.mutate(formData);
+      // Ensure all required fields are present before saving
+      const dataToSave = {
+        ...formData,
+        vipUltra: {
+          ...formData.vipUltra,
+          aiPreferenceTuner: formData.vipUltra.aiPreferenceTuner || {
+            riskAppetite: 'Balanced',
+            exposureLimit: 60,
+          },
+          manualOverrideOptions: formData.vipUltra.manualOverrideOptions || [],
+          dcnPipelineAccess: formData.vipUltra.dcnPipelineAccess || [],
+          executionVenueDetails: formData.vipUltra.executionVenueDetails || [],
+          marketImpactReport: formData.vipUltra.marketImpactReport || {
+            avgSlippage: '',
+            fillRate: '',
+            priceImpact: '',
+          },
+        },
+      };
+      console.log('Saving data:', dataToSave);
+      updateMutation.mutate(dataToSave);
+    } else {
+      toast({
+        title: 'Error',
+        description: 'No data to save',
+        variant: 'destructive',
+      });
     }
   };
 
@@ -350,6 +451,11 @@ export default function AccountRoomsAdmin() {
       realTimeData: { enabled: false, latency: 0 },
       advancedMetrics: { enabled: false, metrics: [] },
       customReporting: { enabled: false, formats: [] },
+      aiPreferenceTuner: { riskAppetite: 'Balanced', exposureLimit: 60 },
+      manualOverrideOptions: [],
+      dcnPipelineAccess: [],
+      executionVenueDetails: [],
+      marketImpactReport: { avgSlippage: '', fillRate: '', priceImpact: '' },
     },
   };
 
@@ -1529,7 +1635,24 @@ export default function AccountRoomsAdmin() {
               size="sm"
               onClick={() => {
                 if (!formData) {
-                  setFormData(JSON.parse(JSON.stringify(currentData)));
+                  const dataCopy = JSON.parse(JSON.stringify(currentData));
+                  // Ensure all VIP Ultra fields exist with defaults
+                  if (!dataCopy.vipUltra.aiPreferenceTuner) {
+                    dataCopy.vipUltra.aiPreferenceTuner = { riskAppetite: 'Balanced', exposureLimit: 60 };
+                  }
+                  if (!dataCopy.vipUltra.manualOverrideOptions) {
+                    dataCopy.vipUltra.manualOverrideOptions = [];
+                  }
+                  if (!dataCopy.vipUltra.dcnPipelineAccess) {
+                    dataCopy.vipUltra.dcnPipelineAccess = [];
+                  }
+                  if (!dataCopy.vipUltra.executionVenueDetails) {
+                    dataCopy.vipUltra.executionVenueDetails = [];
+                  }
+                  if (!dataCopy.vipUltra.marketImpactReport) {
+                    dataCopy.vipUltra.marketImpactReport = { avgSlippage: '', fillRate: '', priceImpact: '' };
+                  }
+                  setFormData(dataCopy);
                 }
                 setEditingSection(editingSection === 'vip-ultra' ? null : 'vip-ultra');
               }}
@@ -1616,6 +1739,299 @@ export default function AccountRoomsAdmin() {
                       })
                     }
                   />
+                </div>
+              </div>
+
+              {/* AI Preference Tuner */}
+              <div className="space-y-4 border-t pt-4">
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">AI Preference Tuner</h4>
+                </div>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <Label>Risk Appetite</Label>
+                    <Select
+                      value={formData.vipUltra.aiPreferenceTuner?.riskAppetite || 'Balanced'}
+                      onValueChange={(value) =>
+                        setFormData({
+                          ...formData,
+                          vipUltra: {
+                            ...formData.vipUltra,
+                            aiPreferenceTuner: {
+                              ...(formData.vipUltra.aiPreferenceTuner || { riskAppetite: 'Balanced', exposureLimit: 60 }),
+                              riskAppetite: value,
+                            },
+                          },
+                        })
+                      }
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Conservative">Conservative</SelectItem>
+                        <SelectItem value="Balanced">Balanced</SelectItem>
+                        <SelectItem value="Aggressive">Aggressive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Exposure Limit (%)</Label>
+                    <Input
+                      type="number"
+                      min="0"
+                      max="100"
+                      value={formData.vipUltra.aiPreferenceTuner?.exposureLimit ?? 60}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          vipUltra: {
+                            ...formData.vipUltra,
+                            aiPreferenceTuner: {
+                              ...(formData.vipUltra.aiPreferenceTuner || { riskAppetite: 'Balanced', exposureLimit: 60 }),
+                              exposureLimit: parseFloat(e.target.value) || 0,
+                            },
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Manual Override Options */}
+              <div className="space-y-2 border-t pt-4">
+                <Label>Manual Override Options</Label>
+                {(formData.vipUltra.manualOverrideOptions || []).map((option, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      value={option}
+                      onChange={(e) => {
+                        const updated = [...formData.vipUltra.manualOverrideOptions];
+                        updated[index] = e.target.value;
+                        setFormData({
+                          ...formData,
+                          vipUltra: { ...formData.vipUltra, manualOverrideOptions: updated },
+                        });
+                      }}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        const updated = formData.vipUltra.manualOverrideOptions.filter((_, i) => i !== index);
+                        setFormData({
+                          ...formData,
+                          vipUltra: { ...formData.vipUltra, manualOverrideOptions: updated },
+                        });
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      vipUltra: {
+                        ...formData.vipUltra,
+                        manualOverrideOptions: [...formData.vipUltra.manualOverrideOptions, ''],
+                      },
+                    });
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Option
+                </Button>
+              </div>
+
+              {/* DCN Pipeline Access */}
+              <div className="space-y-2 border-t pt-4">
+                <Label>DCN Pipeline Access</Label>
+                {(formData.vipUltra.dcnPipelineAccess || []).map((item, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      placeholder="Label"
+                      value={item.label}
+                      onChange={(e) => {
+                        const updated = [...formData.vipUltra.dcnPipelineAccess];
+                        updated[index] = { ...item, label: e.target.value };
+                        setFormData({
+                          ...formData,
+                          vipUltra: { ...formData.vipUltra, dcnPipelineAccess: updated },
+                        });
+                      }}
+                    />
+                    <Input
+                      placeholder="Status"
+                      value={item.status}
+                      onChange={(e) => {
+                        const updated = [...formData.vipUltra.dcnPipelineAccess];
+                        updated[index] = { ...item, status: e.target.value };
+                        setFormData({
+                          ...formData,
+                          vipUltra: { ...formData.vipUltra, dcnPipelineAccess: updated },
+                        });
+                      }}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        const updated = formData.vipUltra.dcnPipelineAccess.filter((_, i) => i !== index);
+                        setFormData({
+                          ...formData,
+                          vipUltra: { ...formData.vipUltra, dcnPipelineAccess: updated },
+                        });
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      vipUltra: {
+                        ...formData.vipUltra,
+                        dcnPipelineAccess: [...formData.vipUltra.dcnPipelineAccess, { label: '', status: '' }],
+                      },
+                    });
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Pipeline Item
+                </Button>
+              </div>
+
+              {/* Execution Venue Details */}
+              <div className="space-y-2 border-t pt-4">
+                <Label>Execution Venue Details</Label>
+                {(formData.vipUltra.executionVenueDetails || []).map((item, index) => (
+                  <div key={index} className="flex gap-2">
+                    <Input
+                      placeholder="Venue"
+                      value={item.venue}
+                      onChange={(e) => {
+                        const updated = [...formData.vipUltra.executionVenueDetails];
+                        updated[index] = { ...item, venue: e.target.value };
+                        setFormData({
+                          ...formData,
+                          vipUltra: { ...formData.vipUltra, executionVenueDetails: updated },
+                        });
+                      }}
+                    />
+                    <Input
+                      placeholder="Fill %"
+                      value={item.fill}
+                      onChange={(e) => {
+                        const updated = [...formData.vipUltra.executionVenueDetails];
+                        updated[index] = { ...item, fill: e.target.value };
+                        setFormData({
+                          ...formData,
+                          vipUltra: { ...formData.vipUltra, executionVenueDetails: updated },
+                        });
+                      }}
+                    />
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      onClick={() => {
+                        const updated = formData.vipUltra.executionVenueDetails.filter((_, i) => i !== index);
+                        setFormData({
+                          ...formData,
+                          vipUltra: { ...formData.vipUltra, executionVenueDetails: updated },
+                        });
+                      }}
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    setFormData({
+                      ...formData,
+                      vipUltra: {
+                        ...formData.vipUltra,
+                        executionVenueDetails: [...formData.vipUltra.executionVenueDetails, { venue: '', fill: '' }],
+                      },
+                    });
+                  }}
+                >
+                  <Plus className="w-4 h-4 mr-2" />
+                  Add Venue
+                </Button>
+              </div>
+
+              {/* Market Impact Report */}
+              <div className="space-y-4 border-t pt-4">
+                <div>
+                  <h4 className="text-sm font-semibold mb-2">Market Impact Report</h4>
+                </div>
+                <div className="grid gap-4 md:grid-cols-3">
+                  <div className="space-y-2">
+                    <Label>Avg Slippage</Label>
+                    <Input
+                      value={formData.vipUltra.marketImpactReport?.avgSlippage || ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          vipUltra: {
+                            ...formData.vipUltra,
+                            marketImpactReport: {
+                              ...(formData.vipUltra.marketImpactReport || { avgSlippage: '', fillRate: '', priceImpact: '' }),
+                              avgSlippage: e.target.value,
+                            },
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Fill Rate</Label>
+                    <Input
+                      value={formData.vipUltra.marketImpactReport?.fillRate || ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          vipUltra: {
+                            ...formData.vipUltra,
+                            marketImpactReport: {
+                              ...(formData.vipUltra.marketImpactReport || { avgSlippage: '', fillRate: '', priceImpact: '' }),
+                              fillRate: e.target.value,
+                            },
+                          },
+                        })
+                      }
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label>Price Impact</Label>
+                    <Input
+                      value={formData.vipUltra.marketImpactReport?.priceImpact || ''}
+                      onChange={(e) =>
+                        setFormData({
+                          ...formData,
+                          vipUltra: {
+                            ...formData.vipUltra,
+                            marketImpactReport: {
+                              ...(formData.vipUltra.marketImpactReport || { avgSlippage: '', fillRate: '', priceImpact: '' }),
+                              priceImpact: e.target.value,
+                            },
+                          },
+                        })
+                      }
+                    />
+                  </div>
                 </div>
               </div>
             </div>

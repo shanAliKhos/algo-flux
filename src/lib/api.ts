@@ -474,6 +474,24 @@ export const adminApi = {
           enabled: boolean;
           formats: string[];
         };
+        aiPreferenceTuner: {
+          riskAppetite: string;
+          exposureLimit: number;
+        };
+        manualOverrideOptions: string[];
+        dcnPipelineAccess: Array<{
+          label: string;
+          status: string;
+        }>;
+        executionVenueDetails: Array<{
+          venue: string;
+          fill: string;
+        }>;
+        marketImpactReport: {
+          avgSlippage: string;
+          fillRate: string;
+          priceImpact: string;
+        };
       };
     }>('/admin/account-rooms', true), // Skip auth for public endpoint
   updateAccountRooms: (data: {
@@ -552,6 +570,24 @@ export const adminApi = {
       customReporting: {
         enabled: boolean;
         formats: string[];
+      };
+      aiPreferenceTuner: {
+        riskAppetite: string;
+        exposureLimit: number;
+      };
+      manualOverrideOptions: string[];
+      dcnPipelineAccess: Array<{
+        label: string;
+        status: string;
+      }>;
+      executionVenueDetails: Array<{
+        venue: string;
+        fill: string;
+      }>;
+      marketImpactReport: {
+        avgSlippage: string;
+        fillRate: string;
+        priceImpact: string;
       };
     };
   }) => apiClient.post('/admin/account-rooms', data),

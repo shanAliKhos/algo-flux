@@ -3,6 +3,11 @@ import { GlassCard } from "@/components/ui/GlassCard";
 import { AccountTypeRoom } from "@/components/ui/AccountTypeRoom";
 import { Users } from "lucide-react";
 
+/**
+ * Account Rooms Page - Dynamically displays account type rooms
+ * Data is fetched from the admin-managed backend API
+ * All content is configurable through the admin panel at /admin/account-rooms
+ */
 export default function AccountRooms() {
   return (
     <Layout>
@@ -15,14 +20,23 @@ export default function AccountRooms() {
             </h1>
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
-            Tailored views for every account type.
+            Tailored views for every account type. All data is managed dynamically through the admin panel.
           </p>
         </div>
 
-        <GlassCard className="p-6"><AccountTypeRoom type="retail-small" /></GlassCard>
-        <GlassCard className="p-6"><AccountTypeRoom type="pro-retail" /></GlassCard>
-        <GlassCard className="p-6"><AccountTypeRoom type="investor" /></GlassCard>
-        <GlassCard className="p-6"><AccountTypeRoom type="vip-ultra" /></GlassCard>
+        {/* All account room components fetch data dynamically from /admin/account-rooms API */}
+        <GlassCard className="p-6">
+          <AccountTypeRoom type="retail-small" />
+        </GlassCard>
+        <GlassCard className="p-6">
+          <AccountTypeRoom type="pro-retail" />
+        </GlassCard>
+        <GlassCard className="p-6">
+          <AccountTypeRoom type="investor" />
+        </GlassCard>
+        <GlassCard className="p-6">
+          <AccountTypeRoom type="vip-ultra" />
+        </GlassCard>
       </div>
     </Layout>
   );

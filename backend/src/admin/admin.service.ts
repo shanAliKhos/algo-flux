@@ -323,8 +323,127 @@ export class AdminService {
   async getAccountRooms() {
     let accountRooms = await this.accountRoomsModel.findOne({ key: 'default' }).exec();
 
+    // Return default data if none exists (allows page to work before admin setup)
     if (!accountRooms) {
-      throw new BadRequestException('Account Rooms data not found');
+      return {
+        retailSmall: {
+          title: 'Retail Small Account',
+          subtitle: 'Safety-First Trading • $100–$3,000',
+          safeMode: {
+            active: true,
+            description: 'All trades filtered through maximum safety protocols',
+          },
+          dailyRiskUsed: 35,
+          maxDrawdown: -5,
+          currentDrawdown: -1.2,
+          leverageMode: 'Low: 1:10',
+          recentSignals: [
+            { emoji: '✅', text: 'XAUUSD buy closed +$45' },
+            { emoji: '⏳', text: 'BTCUSDT watching...' },
+            { emoji: '🛡️', text: 'Risk limit: OK' },
+          ],
+          safetyReasons: [
+            'Low volatility environment',
+            'Strong trend confirmation',
+            'Risk only 0.5% of account',
+            'Clear stop loss defined',
+          ],
+        },
+        proRetail: {
+          title: 'Pro Retail Account',
+          subtitle: 'Advanced Control • $5,000–$50,000',
+          strategyUtilization: [
+            { name: 'Nuvex', percentage: 35 },
+            { name: 'Drav', percentage: 28 },
+            { name: 'Tenzor', percentage: 22 },
+            { name: 'Others', percentage: 15 },
+          ],
+          executionQuality: 94.2,
+          marketRegime: {
+            type: 'Trending + Risk-On',
+            description: 'Favoring momentum strategies',
+          },
+          opportunityHeatmap: [
+            { symbol: 'XAUUSD', active: true },
+            { symbol: 'BTCUSDT', active: true },
+            { symbol: 'NAS100', active: true },
+            { symbol: 'EURUSD', active: true },
+            { symbol: 'TSLA', active: false },
+            { symbol: 'AAPL', active: false },
+            { symbol: 'ETH', active: false },
+            { symbol: 'GBPJPY', active: false },
+          ],
+          strategyConfidence: [
+            { name: 'Drav', confidence: 'High' },
+            { name: 'Tenzor', confidence: 'High' },
+            { name: 'Nuvex', confidence: 'Medium' },
+          ],
+        },
+        investor: {
+          title: 'Investor / Fund Account',
+          subtitle: 'Institutional Reporting • $50,000–$1M+',
+          equityCurve: {
+            ytdReturn: 24.7,
+            dataPoints: [45, 52, 48, 58, 55, 62, 68, 65, 72, 78, 75, 82],
+          },
+          drawdownZones: {
+            maxDrawdown: -8.4,
+            currentDrawdown: -2.1,
+            avgRecovery: 12,
+          },
+          riskAdjustedMetrics: {
+            sharpeRatio: 1.82,
+            sortinoRatio: 2.14,
+            calmarRatio: 2.94,
+          },
+          alphaSources: [
+            { name: 'Momentum', percentage: 38 },
+            { name: 'Mean Reversion', percentage: 28 },
+            { name: 'SMC/Liquidity', percentage: 22 },
+            { name: 'Statistical Arb', percentage: 12 },
+          ],
+        },
+        vipUltra: {
+          title: 'VIP Ultra Account',
+          subtitle: 'Full Transparency • $1M+',
+          fullTransparency: {
+            enabled: true,
+            features: ['Real-time trade execution', 'Full strategy disclosure', 'Live risk monitoring'],
+          },
+          realTimeData: {
+            enabled: true,
+            latency: 5,
+          },
+          advancedMetrics: {
+            enabled: true,
+            metrics: ['Sharpe Ratio', 'Sortino Ratio', 'Calmar Ratio', 'Max Drawdown'],
+          },
+          customReporting: {
+            enabled: true,
+            formats: ['PDF', 'Excel', 'JSON', 'CSV'],
+          },
+          aiPreferenceTuner: {
+            riskAppetite: 'Balanced',
+            exposureLimit: 60,
+          },
+          manualOverrideOptions: ['Pause All Trading', 'Force Close All', 'Blacklist Instrument', 'Whitelist Only Mode'],
+          dcnPipelineAccess: [
+            { label: 'Decision Layer', status: '7 signals' },
+            { label: 'Confirmation', status: '5/6 passed' },
+            { label: 'Navigation', status: 'Active' },
+          ],
+          executionVenueDetails: [
+            { venue: 'Prime Broker A', fill: '98.2%' },
+            { venue: 'Dark Pool', fill: '1.5%' },
+            { venue: 'Direct Exchange', fill: '0.3%' },
+          ],
+          marketImpactReport: {
+            avgSlippage: '0.02 pips',
+            fillRate: '99.8%',
+            priceImpact: 'Negligible',
+          },
+        },
+      };
     }
 
     return {

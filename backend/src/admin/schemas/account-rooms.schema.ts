@@ -94,6 +94,24 @@ export class AccountRooms {
       enabled: boolean;
       formats: string[];
     };
+    aiPreferenceTuner: {
+      riskAppetite: string;
+      exposureLimit: number;
+    };
+    manualOverrideOptions: string[];
+    dcnPipelineAccess: Array<{
+      label: string;
+      status: string;
+    }>;
+    executionVenueDetails: Array<{
+      venue: string;
+      fill: string;
+    }>;
+    marketImpactReport: {
+      avgSlippage: string;
+      fillRate: string;
+      priceImpact: string;
+    };
   };
 }
 
