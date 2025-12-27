@@ -17,6 +17,11 @@ export class Strategies {
     confidence: 'high' | 'medium' | 'low';
     bias: string;
     instruments: string[];
+    tagline?: string;
+    holdingTime?: string;
+    assets?: string[];
+    edge?: string;
+    risk?: 'conservative' | 'balanced' | 'aggressive';
   }>;
 }
 

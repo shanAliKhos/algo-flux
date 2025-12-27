@@ -34,6 +34,7 @@ import { TradeRecord, TradeRecordSchema } from './schemas/trade-record.schema';
   ],
   controllers: [AdminController],
   providers: [AdminService],
+  exports: [AdminService],
 })
 export class AdminModule {}
 

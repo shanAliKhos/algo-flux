@@ -79,9 +79,8 @@ export class AdminController {
     return this.adminService.updatePerformance(performanceDto);
   }
 
-  @Public()
   @Get('strategies')
-  @ApiOperation({ summary: 'Get Strategies configuration (Public)' })
+  @ApiOperation({ summary: 'Get Strategies configuration (Admin only)' })
   @ApiResponse({ status: 200, description: 'Strategies retrieved successfully' })
   getStrategies() {
     return this.adminService.getStrategies();

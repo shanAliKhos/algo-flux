@@ -27,6 +27,11 @@ interface Strategy {
   confidence: 'high' | 'medium' | 'low';
   bias: string;
   instruments: string[];
+  tagline?: string;
+  holdingTime?: string;
+  assets?: string[];
+  edge?: string;
+  risk?: 'conservative' | 'balanced' | 'aggressive';
 }
 
 import { getAllSymbols } from '@/lib/trading-pairs';
@@ -100,6 +105,11 @@ export default function Strategies() {
     handleUpdateStrategy(index, 'instruments', instrumentsArray);
   };
 
+  const handleUpdateAssets = (index: number, assets: string) => {
+    const assetsArray = assets.split(',').map(a => a.trim()).filter(Boolean);
+    handleUpdateStrategy(index, 'assets', assetsArray);
+  };
+
   const handleToggleInstrument = (index: number, instrument: string) => {
     const strategy = strategies[index];
     const currentInstruments = strategy.instruments;
@@ -130,6 +140,11 @@ export default function Strategies() {
       confidence: 'medium',
       bias: '',
       instruments: [],
+      tagline: '',
+      holdingTime: '',
+      assets: [],
+      edge: '',
+      risk: 'balanced',
     }]);
     setEditingIndex(strategies.length);
   };
@@ -295,12 +310,70 @@ export default function Strategies() {
                   </div>
 
                   <div className="space-y-2">
+                    <Label className="text-foreground">Tagline</Label>
+                    <Input
+                      value={strategy.tagline || ''}
+                      onChange={(e) => handleUpdateStrategy(index, 'tagline', e.target.value)}
+                      placeholder="e.g., Institutional Reversal Engine"
+                      className="bg-background border-input text-foreground"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
                     <Label className="text-foreground">Bias</Label>
                     <Input
                       value={strategy.bias}
                       onChange={(e) => handleUpdateStrategy(index, 'bias', e.target.value)}
                       className="bg-background border-input text-foreground"
                     />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-foreground">Edge</Label>
+                    <Input
+                      value={strategy.edge || ''}
+                      onChange={(e) => handleUpdateStrategy(index, 'edge', e.target.value)}
+                      placeholder="e.g., Engulfing Reversals, RSI Divergence"
+                      className="bg-background border-input text-foreground"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-foreground">Holding Time</Label>
+                    <Input
+                      value={strategy.holdingTime || ''}
+                      onChange={(e) => handleUpdateStrategy(index, 'holdingTime', e.target.value)}
+                      placeholder="e.g., Intraday / Swing"
+                      className="bg-background border-input text-foreground"
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-foreground">Risk Level</Label>
+                    <Select
+                      value={strategy.risk || 'balanced'}
+                      onValueChange={(value) => handleUpdateStrategy(index, 'risk', value)}
+                    >
+                      <SelectTrigger className="bg-background border-input text-foreground">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="conservative">Conservative</SelectItem>
+                        <SelectItem value="balanced">Balanced</SelectItem>
+                        <SelectItem value="aggressive">Aggressive</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label className="text-foreground">Asset Classes</Label>
+                    <Input
+                      value={strategy.assets?.join(', ') || ''}
+                      onChange={(e) => handleUpdateAssets(index, e.target.value)}
+                      placeholder="e.g., Forex, Gold, Indices, Stocks"
+                      className="bg-background border-input text-foreground"
+                    />
+                    <p className="text-xs text-muted-foreground">Comma-separated list</p>
                   </div>
 
                   <div className="space-y-2">
@@ -383,10 +456,48 @@ export default function Strategies() {
                     <p className="text-sm text-muted-foreground">Accuracy</p>
                     <p className="text-2xl font-bold text-foreground">{strategy.accuracy}%</p>
                   </div>
+                  {strategy.tagline && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Tagline</p>
+                      <p className="text-sm text-foreground">{strategy.tagline}</p>
+                    </div>
+                  )}
                   <div>
                     <p className="text-sm text-muted-foreground">Bias</p>
                     <p className="text-sm text-foreground">{strategy.bias}</p>
                   </div>
+                  {strategy.edge && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Edge</p>
+                      <p className="text-sm text-foreground">{strategy.edge}</p>
+                    </div>
+                  )}
+                  {strategy.holdingTime && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Holding Time</p>
+                      <p className="text-sm text-foreground">{strategy.holdingTime}</p>
+                    </div>
+                  )}
+                  {strategy.risk && (
+                    <div>
+                      <p className="text-sm text-muted-foreground">Risk</p>
+                      <Badge variant="outline" className="capitalize">
+                        {strategy.risk}
+                      </Badge>
+                    </div>
+                  )}
+                  {strategy.assets && strategy.assets.length > 0 && (
+                    <div>
+                      <p className="text-sm text-muted-foreground mb-2">Asset Classes</p>
+                      <div className="flex flex-wrap gap-1">
+                        {strategy.assets.map((asset, i) => (
+                          <Badge key={i} variant="secondary" className="text-xs">
+                            {asset}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <p className="text-sm text-muted-foreground mb-2">Instruments</p>
                     <div className="flex flex-wrap gap-1">

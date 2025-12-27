@@ -89,7 +89,7 @@ export function Sidebar() {
     queryKey: ['sidebar-strategies'],
     queryFn: async () => {
       try {
-        const response = await apiClient.get<Strategy[]>('/admin/strategies', true); // Skip auth for public endpoint
+        const response = await apiClient.get<Strategy[]>('/strategies', true); // Public endpoint
         return response || [];
       } catch (error) {
         console.error('Failed to fetch strategies:', error);

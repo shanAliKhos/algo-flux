@@ -26,6 +26,27 @@ export class StrategyItemDto {
   @IsArray()
   @IsString({ each: true })
   instruments: string[];
+
+  @IsOptional()
+  @IsString()
+  tagline?: string;
+
+  @IsOptional()
+  @IsString()
+  holdingTime?: string;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  assets?: string[];
+
+  @IsOptional()
+  @IsString()
+  edge?: string;
+
+  @IsOptional()
+  @IsEnum(['conservative', 'balanced', 'aggressive'])
+  risk?: 'conservative' | 'balanced' | 'aggressive';
 }
 
 export class StrategiesDto {
