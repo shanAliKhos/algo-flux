@@ -712,4 +712,57 @@ export const adminApi = {
       }>;
     }>;
   }) => apiClient.post('/admin/conditions', data),
+  getPortfolio: () =>
+    apiClient.get<{
+      topStats: {
+        totalEquity: string;
+        totalEquityChange?: number;
+        mtdReturn: string;
+        maxDrawdown: string;
+        sharpeRatio: string;
+      };
+      equityData: number[];
+      drawdownData: number[];
+      maxDrawdownValue: number;
+      exposureTiles: Array<{
+        category: string;
+        allocation: number;
+        pnl: number;
+      }>;
+      regionExposure: Array<{
+        region: string;
+        allocation: number;
+      }>;
+      riskBuckets: Array<{
+        name: string;
+        allocation: number;
+        strategies: string[];
+      }>;
+    }>('/admin/portfolio', true), // Skip auth for public endpoint
+  updatePortfolio: (data: {
+    topStats: {
+      totalEquity: string;
+      totalEquityChange?: number;
+      mtdReturn: string;
+      maxDrawdown: string;
+      sharpeRatio: string;
+    };
+    equityData: number[];
+    drawdownData: number[];
+    maxDrawdownValue: number;
+    exposureTiles: Array<{
+      category: string;
+      allocation: number;
+      pnl: number;
+    }>;
+    regionExposure: Array<{
+      region: string;
+      allocation: number;
+    }>;
+    riskBuckets: Array<{
+      name: string;
+      allocation: number;
+      strategies: string[];
+    }>;
+  }) => apiClient.post('/admin/portfolio', data),
 };

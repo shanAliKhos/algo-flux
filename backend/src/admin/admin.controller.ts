@@ -16,6 +16,8 @@ import { RadarDto } from './dto/radar.dto';
 import { AuditDto } from './dto/audit.dto';
 import { ConditionsDto } from './dto/conditions.dto';
 import { ExecutionDto } from './dto/execution.dto';
+import { PortfolioDto } from './dto/portfolio.dto';
+import { TransparencyDto } from './dto/transparency.dto';
 
 @ApiTags('Admin')
 @ApiBearerAuth()
@@ -181,6 +183,36 @@ export class AdminController {
   @ApiResponse({ status: 200, description: 'Radar data updated successfully' })
   updateRadar(@Body(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true })) radarDto: RadarDto) {
     return this.adminService.updateRadar(radarDto);
+  }
+
+  @Public()
+  @Get('portfolio')
+  @ApiOperation({ summary: 'Get Portfolio data (Public)' })
+  @ApiResponse({ status: 200, description: 'Portfolio data retrieved successfully' })
+  getPortfolio() {
+    return this.adminService.getPortfolio();
+  }
+
+  @Post('portfolio')
+  @ApiOperation({ summary: 'Update Portfolio data' })
+  @ApiResponse({ status: 200, description: 'Portfolio data updated successfully' })
+  updatePortfolio(@Body(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true })) portfolioDto: PortfolioDto) {
+    return this.adminService.updatePortfolio(portfolioDto);
+  }
+
+  @Public()
+  @Get('transparency')
+  @ApiOperation({ summary: 'Get Transparency data (Public)' })
+  @ApiResponse({ status: 200, description: 'Transparency data retrieved successfully' })
+  getTransparency() {
+    return this.adminService.getTransparency();
+  }
+
+  @Post('transparency')
+  @ApiOperation({ summary: 'Update Transparency data' })
+  @ApiResponse({ status: 200, description: 'Transparency data updated successfully' })
+  updateTransparency(@Body(new ValidationPipe({ transform: true, whitelist: true, forbidNonWhitelisted: true })) transparencyDto: TransparencyDto) {
+    return this.adminService.updateTransparency(transparencyDto);
   }
 }
 

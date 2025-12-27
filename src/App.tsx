@@ -40,11 +40,13 @@ import MarketBrain from "./pages/admin/MarketBrain";
 import DataStreams from "./pages/admin/DataStreams";
 import Strategies from "./pages/admin/Strategies";
 import Performance from "./pages/admin/Performance";
+import PortfolioAdmin from "./pages/admin/Portfolio";
 import TradeFormationAdmin from "./pages/admin/TradeFormation";
 import AccountRoomsAdmin from "./pages/admin/AccountRooms";
 import AuditAdmin from "./pages/admin/Audit";
 import RadarAdmin from "./pages/admin/Radar";
 import ConditionsAdmin from "./pages/admin/Conditions";
+import TransparencyAdmin from "./pages/admin/Transparency";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -159,6 +161,16 @@ const App = () => (
               }
             />
             <Route
+              path="/admin/portfolio"
+              element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <PortfolioAdmin />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/admin/performance"
               element={
                 <ProtectedRoute>
@@ -214,6 +226,16 @@ const App = () => (
                 <ProtectedRoute>
                   <AdminLayout>
                     <ConditionsAdmin />
+                  </AdminLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/transparency"
+              element={
+                <ProtectedRoute>
+                  <AdminLayout>
+                    <TransparencyAdmin />
                   </AdminLayout>
                 </ProtectedRoute>
               }

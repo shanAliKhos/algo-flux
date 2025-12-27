@@ -14,6 +14,8 @@ import { Radar, RadarSchema } from './schemas/radar.schema';
 import { Conditions, ConditionsSchema } from './schemas/conditions.schema';
 import { Audit, AuditSchema } from './schemas/audit.schema';
 import { TradeRecord, TradeRecordSchema } from './schemas/trade-record.schema';
+import { Portfolio, PortfolioSchema } from './schemas/portfolio.schema';
+import { Transparency, TransparencySchema } from './schemas/transparency.schema';
 
 @Module({
   imports: [
@@ -30,6 +32,8 @@ import { TradeRecord, TradeRecordSchema } from './schemas/trade-record.schema';
       { name: Audit.name, schema: AuditSchema },
       { name: Radar.name, schema: RadarSchema },
       { name: TradeRecord.name, schema: TradeRecordSchema },
+      { name: Portfolio.name, schema: PortfolioSchema },
+      { name: Transparency.name, schema: TransparencySchema },
     ]),
   ],
   controllers: [AdminController],

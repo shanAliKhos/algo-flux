@@ -15,6 +15,8 @@ import {
   Users,
   ScanLine,
   Compass,
+  Briefcase,
+  Eye,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -33,10 +35,12 @@ const adminNavItems = [
   { name: 'Market Radar', path: '/admin/market-radar', icon: ScanLine },
   { name: 'Performance', path: '/admin/performance', icon: TrendingUp },
   { name: 'Strategies', path: '/admin/strategies', icon: Target },
+  { name: 'Portfolio', path: '/admin/portfolio', icon: Briefcase },
   { name: 'Trade Formation', path: '/admin/trade-formation', icon: Sparkles },
   { name: 'Account Rooms', path: '/admin/account-rooms', icon: Users },
   { name: 'Market Conditions', path: '/admin/conditions', icon: Compass },
   { name: 'Audit Room', path: '/admin/audit-room', icon: Shield },
+  { name: 'Transparency', path: '/admin/transparency', icon: Eye },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -24,6 +24,10 @@ import { ExecutionDto } from './dto/execution.dto';
 import { Radar, RadarDocument } from './schemas/radar.schema';
 import { RadarDto } from './dto/radar.dto';
 import { TradeRecord, TradeRecordDocument } from './schemas/trade-record.schema';
+import { Portfolio, PortfolioDocument } from './schemas/portfolio.schema';
+import { PortfolioDto } from './dto/portfolio.dto';
+import { Transparency, TransparencyDocument } from './schemas/transparency.schema';
+import { TransparencyDto } from './dto/transparency.dto';
 
 @Injectable()
 export class AdminService {
@@ -40,6 +44,8 @@ export class AdminService {
     @InjectModel(Audit.name) private auditModel: Model<AuditDocument>,
     @InjectModel(Radar.name) private radarModel: Model<RadarDocument>,
     @InjectModel(TradeRecord.name) private tradeRecordModel: Model<TradeRecordDocument>,
+    @InjectModel(Portfolio.name) private portfolioModel: Model<PortfolioDocument>,
+    @InjectModel(Transparency.name) private transparencyModel: Model<TransparencyDocument>,
   ) {}
 
   async getDashboardStats() {
@@ -701,6 +707,94 @@ export class AdminService {
       assetClasses: radar.assetClasses,
       opportunities: radar.opportunities,
       regimes: radar.regimes,
+    };
+  }
+
+  async getPortfolio() {
+    let portfolio = await this.portfolioModel.findOne({ key: 'default' }).exec();
+
+    if (!portfolio) {
+      throw new BadRequestException('Portfolio data not found');
+    }
+
+    return {
+      topStats: portfolio.topStats,
+      equityData: portfolio.equityData,
+      drawdownData: portfolio.drawdownData,
+      maxDrawdownValue: portfolio.maxDrawdownValue,
+      exposureTiles: portfolio.exposureTiles,
+      regionExposure: portfolio.regionExposure,
+      riskBuckets: portfolio.riskBuckets,
+    };
+  }
+
+  async updatePortfolio(portfolioDto: PortfolioDto) {
+    const portfolio = await this.portfolioModel
+      .findOneAndUpdate(
+        { key: 'default' },
+        {
+          key: 'default',
+          topStats: portfolioDto.topStats,
+          equityData: portfolioDto.equityData,
+          drawdownData: portfolioDto.drawdownData,
+          maxDrawdownValue: portfolioDto.maxDrawdownValue,
+          exposureTiles: portfolioDto.exposureTiles,
+          regionExposure: portfolioDto.regionExposure,
+          riskBuckets: portfolioDto.riskBuckets,
+        },
+        { upsert: true, new: true },
+      )
+      .exec();
+
+    return {
+      topStats: portfolio.topStats,
+      equityData: portfolio.equityData,
+      drawdownData: portfolio.drawdownData,
+      maxDrawdownValue: portfolio.maxDrawdownValue,
+      exposureTiles: portfolio.exposureTiles,
+      regionExposure: portfolio.regionExposure,
+      riskBuckets: portfolio.riskBuckets,
+    };
+  }
+
+  async getTransparency() {
+    let transparency = await this.transparencyModel.findOne({ key: 'default' }).exec();
+
+    if (!transparency) {
+      throw new BadRequestException('Transparency data not found');
+    }
+
+    return {
+      complianceStats: transparency.complianceStats,
+      recentTrades: transparency.recentTrades,
+      strategyPerformance: transparency.strategyPerformance,
+      topInstruments: transparency.topInstruments,
+      riskCompliance: transparency.riskCompliance,
+    };
+  }
+
+  async updateTransparency(transparencyDto: TransparencyDto) {
+    const transparency = await this.transparencyModel
+      .findOneAndUpdate(
+        { key: 'default' },
+        {
+          key: 'default',
+          complianceStats: transparencyDto.complianceStats,
+          recentTrades: transparencyDto.recentTrades,
+          strategyPerformance: transparencyDto.strategyPerformance,
+          topInstruments: transparencyDto.topInstruments,
+          riskCompliance: transparencyDto.riskCompliance,
+        },
+        { upsert: true, new: true },
+      )
+      .exec();
+
+    return {
+      complianceStats: transparency.complianceStats,
+      recentTrades: transparency.recentTrades,
+      strategyPerformance: transparency.strategyPerformance,
+      topInstruments: transparency.topInstruments,
+      riskCompliance: transparency.riskCompliance,
     };
   }
 }

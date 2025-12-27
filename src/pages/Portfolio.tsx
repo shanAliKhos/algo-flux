@@ -1,13 +1,16 @@
+import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { DataValue } from "@/components/ui/DataValue";
 import { MiniChart } from "@/components/ui/MiniChart";
-import { Briefcase, TrendingUp, TrendingDown, PieChart, Shield, Globe } from "lucide-react";
+import { Briefcase, TrendingUp, TrendingDown, PieChart, Shield, Globe, Loader2 } from "lucide-react";
+import { adminApi } from "@/lib/api";
 
-const equityData = Array.from({ length: 60 }, (_, i) => 100000 + Math.sin(i / 8) * 3000 + i * 200);
-const drawdownData = Array.from({ length: 60 }, (_, i) => Math.max(0, -Math.sin(i / 10) * 4));
+// Default fallback data
+const defaultEquityData = Array.from({ length: 60 }, (_, i) => 100000 + Math.sin(i / 8) * 3000 + i * 200);
+const defaultDrawdownData = Array.from({ length: 60 }, (_, i) => Math.max(0, -Math.sin(i / 10) * 4));
 
-const exposureTiles = [
+const defaultExposureTiles = [
   { category: "Forex", allocation: 28, pnl: 4250 },
   { category: "Indices", allocation: 22, pnl: 3120 },
   { category: "Stocks", allocation: 20, pnl: 1890 },
@@ -15,20 +18,72 @@ const exposureTiles = [
   { category: "Gold", allocation: 12, pnl: 2340 },
 ];
 
-const regionExposure = [
+const defaultRegionExposure = [
   { region: "US", allocation: 55 },
   { region: "Europe", allocation: 25 },
   { region: "Asia", allocation: 15 },
   { region: "EM", allocation: 5 },
 ];
 
-const riskBuckets = [
+const defaultRiskBuckets = [
   { name: "Conservative", allocation: 40, strategies: ["Yark", "Xylo"] },
   { name: "Balanced", allocation: 35, strategies: ["Nuvex", "Omnix"] },
   { name: "Aggressive", allocation: 25, strategies: ["Drav", "Tenzor"] },
 ];
 
 export default function Portfolio() {
+  const { data, isLoading } = useQuery({
+    queryKey: ['portfolio'],
+    queryFn: async () => {
+      try {
+        return await adminApi.getPortfolio();
+      } catch (error) {
+        // Return default data if API fails
+        return {
+          topStats: {
+            totalEquity: "$247,892",
+            totalEquityChange: 2.4,
+            mtdReturn: "+8.4%",
+            maxDrawdown: "-3.2%",
+            sharpeRatio: "2.8",
+          },
+          equityData: defaultEquityData,
+          drawdownData: defaultDrawdownData,
+          maxDrawdownValue: -3.2,
+          exposureTiles: defaultExposureTiles,
+          regionExposure: defaultRegionExposure,
+          riskBuckets: defaultRiskBuckets,
+        };
+      }
+    },
+    retry: 1,
+  });
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
+
+  const portfolioData = data || {
+    topStats: {
+      totalEquity: "$247,892",
+      totalEquityChange: 2.4,
+      mtdReturn: "+8.4%",
+      maxDrawdown: "-3.2%",
+      sharpeRatio: "2.8",
+    },
+    equityData: defaultEquityData,
+    drawdownData: defaultDrawdownData,
+    maxDrawdownValue: -3.2,
+    exposureTiles: defaultExposureTiles,
+    regionExposure: defaultRegionExposure,
+    riskBuckets: defaultRiskBuckets,
+  };
   return (
     <Layout>
       <div className="min-h-screen p-6 lg:p-8 space-y-8">
@@ -48,16 +103,21 @@ export default function Portfolio() {
         {/* Top Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <GlassCard glow>
-            <DataValue label="Total Equity" value="$247,892" size="md" change={2.4} />
+            <DataValue 
+              label="Total Equity" 
+              value={portfolioData.topStats.totalEquity} 
+              size="md" 
+              change={portfolioData.topStats.totalEquityChange} 
+            />
           </GlassCard>
           <GlassCard>
-            <DataValue label="MTD Return" value="+8.4%" size="md" />
+            <DataValue label="MTD Return" value={portfolioData.topStats.mtdReturn} size="md" />
           </GlassCard>
           <GlassCard>
-            <DataValue label="Max Drawdown" value="-3.2%" size="md" />
+            <DataValue label="Max Drawdown" value={portfolioData.topStats.maxDrawdown} size="md" />
           </GlassCard>
           <GlassCard>
-            <DataValue label="Sharpe Ratio" value="2.8" size="md" />
+            <DataValue label="Sharpe Ratio" value={portfolioData.topStats.sharpeRatio} size="md" />
           </GlassCard>
         </div>
 
@@ -79,7 +139,7 @@ export default function Portfolio() {
               ))}
             </div>
           </div>
-          <MiniChart data={equityData} height={180} color="primary" />
+          <MiniChart data={portfolioData.equityData} height={180} color="primary" />
         </GlassCard>
 
         {/* Drawdown Strip */}
@@ -89,9 +149,9 @@ export default function Portfolio() {
             <h3 className="font-display font-bold text-xl">Drawdown Strip</h3>
           </div>
           <div className="relative h-24">
-            <MiniChart data={drawdownData} height={80} color="bearish" />
+            <MiniChart data={portfolioData.drawdownData} height={80} color="bearish" />
             <div className="absolute top-0 left-[30%] w-[15%] h-full bg-bearish/10 border-l border-r border-bearish/30 flex items-center justify-center">
-              <span className="text-xs text-bearish">-3.2% Max</span>
+              <span className="text-xs text-bearish">{portfolioData.maxDrawdownValue}% Max</span>
             </div>
           </div>
         </GlassCard>
@@ -105,7 +165,7 @@ export default function Portfolio() {
               <h3 className="font-display font-bold text-xl">By Asset Class</h3>
             </div>
             <div className="space-y-3">
-              {exposureTiles.map((item) => (
+              {portfolioData.exposureTiles.map((item) => (
                 <div key={item.category} className="flex items-center justify-between p-3 bg-muted/30 rounded-lg">
                   <div className="flex items-center gap-3">
                     <div className="w-2 h-8 bg-primary rounded-full" style={{ opacity: item.allocation / 30 }} />
@@ -127,7 +187,7 @@ export default function Portfolio() {
               <h3 className="font-display font-bold text-xl">By Region</h3>
             </div>
             <div className="space-y-4">
-              {regionExposure.map((item) => (
+              {portfolioData.regionExposure.map((item) => (
                 <div key={item.region}>
                   <div className="flex items-center justify-between mb-2">
                     <span className="font-medium">{item.region}</span>
@@ -152,7 +212,7 @@ export default function Portfolio() {
             <h3 className="font-display font-bold text-xl">Risk Buckets</h3>
           </div>
           <div className="grid md:grid-cols-3 gap-6">
-            {riskBuckets.map((bucket) => (
+            {portfolioData.riskBuckets.map((bucket) => (
               <div 
                 key={bucket.name}
                 className={`p-6 rounded-xl border ${
