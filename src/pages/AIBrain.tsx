@@ -16,7 +16,7 @@ import {
   Cpu,
   PieChart,
 } from "lucide-react";
-import { adminApi } from "@/lib/api";
+import { adminApi, apiClient } from "@/lib/api";
 
 const iconMap: Record<string, any> = {
   Target,
@@ -26,6 +26,34 @@ const iconMap: Record<string, any> = {
   Cpu,
   PieChart,
 };
+
+// Map strategy name to icon
+const getStrategyIcon = (name: string): string => {
+  const iconNameMap: Record<string, string> = {
+    'Nuvex': 'Target',
+    'Xylo': 'BarChart3',
+    'Drav': 'TrendingUp',
+    'Yark': 'LineChart',
+    'Tenzor': 'Cpu',
+    'Omnix': 'PieChart',
+  };
+  return iconNameMap[name] || 'Target';
+};
+
+// Generate path from strategy name
+const getStrategyPath = (name: string): string => {
+  return `/strategy/${name.toLowerCase()}`;
+};
+
+interface AdminStrategy {
+  id?: string;
+  name: string;
+  status: 'active' | 'waiting' | 'cooling';
+  accuracy: number;
+  confidence: 'high' | 'medium' | 'low';
+  bias: string;
+  instruments: string[];
+}
 
 export default function AIBrain() {
   const { data, isLoading, error, isFetching } = useQuery({
@@ -40,6 +68,34 @@ export default function AIBrain() {
     retry: 2,
     staleTime: 5000, // Consider data fresh for 5 seconds (reduced for faster updates)
   });
+
+  // Fetch strategies from public /strategies endpoint
+  const { data: adminStrategies = [], isLoading: strategiesLoading } = useQuery<AdminStrategy[]>({
+    queryKey: ['strategies'],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get<AdminStrategy[]>('/strategies', true); // Public endpoint
+        return response || [];
+      } catch (error) {
+        console.error('Failed to fetch strategies:', error);
+        return [];
+      }
+    },
+    retry: 1,
+    staleTime: 5 * 60 * 1000, // Cache for 5 minutes
+  });
+
+  // Map admin strategies to StrategyCard format
+  const mappedStrategies = adminStrategies.map((strategy) => ({
+    name: strategy.name,
+    icon: getStrategyIcon(strategy.name),
+    status: strategy.status,
+    accuracy: strategy.accuracy,
+    confidence: strategy.confidence,
+    bias: strategy.bias,
+    instruments: strategy.instruments,
+    path: getStrategyPath(strategy.name),
+  }));
 
   // Show loading state
   if (isLoading) {
@@ -175,8 +231,12 @@ export default function AIBrain() {
             Strategy Overview Dashboard
           </h3>
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {aiBrainData.strategies && aiBrainData.strategies.length > 0 ? (
-              aiBrainData.strategies.map((strategy) => {
+            {strategiesLoading ? (
+              <div className="col-span-full flex items-center justify-center py-8">
+                <Loader2 className="w-6 h-6 animate-spin text-primary" />
+              </div>
+            ) : mappedStrategies && mappedStrategies.length > 0 ? (
+              mappedStrategies.map((strategy) => {
                 const IconComponent = iconMap[strategy.icon] || Target;
                 return (
                   <StrategyCard
