@@ -1,32 +1,98 @@
+import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TradeTable, Trade } from "@/components/ui/TradeTable";
 import { DataValue } from "@/components/ui/DataValue";
-import { TrendingUp, Target, Droplets, Shield, Activity } from "lucide-react";
+import { TrendingUp, Target, Droplets, Shield, Activity, Loader2 } from "lucide-react";
+import { apiClient } from "@/lib/api";
 
-const liquidityZones = [
+interface Strategy {
+  name: string;
+  status: 'active' | 'waiting' | 'cooling';
+  accuracy: number;
+  confidence: 'high' | 'medium' | 'low';
+  bias: string;
+  instruments: string[];
+  tagline?: string;
+  liquidityZones?: Array<{
+    instrument: string;
+    type: string;
+    level: string;
+    strength: number;
+    status: string;
+  }>;
+  smcZones?: Array<{
+    instrument: string;
+    type: string;
+    range: string;
+    strength: number;
+    planning: boolean;
+  }>;
+  winRate?: number;
+  avgRR?: number;
+  liquiditySweeps?: number;
+  activeZones?: number;
+}
+
+const defaultLiquidityZones = [
   { instrument: "XAUUSD", type: "Equal Highs", level: "2045.50", strength: 92, status: "watching" },
   { instrument: "NAS100", type: "Equal Lows", level: "17650", strength: 85, status: "preparing" },
-  { instrument: "US30", type: "Liquidity Pool", level: "38420", strength: 78, status: "active" },
-  { instrument: "EURUSD", type: "Stop Hunt Zone", level: "1.0920", strength: 88, status: "watching" },
 ];
 
-const smcZones = [
+const defaultSmcZones = [
   { instrument: "XAUUSD", type: "Supply Zone", range: "2042-2048", strength: 89, planning: true },
   { instrument: "NAS100", type: "Demand Zone", range: "17580-17620", strength: 76, planning: true },
-  { instrument: "US30", type: "Supply Zone", range: "38500-38600", strength: 82, planning: false },
-  { instrument: "EURUSD", type: "Demand Zone", range: "1.0850-1.0865", strength: 71, planning: false },
 ];
 
-const trades: Trade[] = [
+const defaultTrades: Trade[] = [
   { id: "1", time: "13:45", instrument: "XAUUSD", direction: "sell", entry: 2046.20, exit: 2032.50, size: "0.75", pnl: 1027.50, rMultiple: 3.8 },
   { id: "2", time: "10:22", instrument: "NAS100", direction: "buy", entry: 17612, exit: 17780, size: "3", pnl: 2520, rMultiple: 2.4 },
-  { id: "3", time: "Yesterday", instrument: "US30", direction: "sell", entry: 38580, exit: 38320, size: "2", pnl: 2600, rMultiple: 4.2 },
-  { id: "4", time: "Yesterday", instrument: "EURUSD", direction: "buy", entry: 1.0852, exit: 1.0812, size: "1.50", pnl: -600, rMultiple: -1.0 },
 ];
 
 export default function DravStrategy() {
+  const { data: strategies = [], isLoading } = useQuery<Strategy[]>({
+    queryKey: ['strategies'],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get<Strategy[]>('/strategies', true);
+        return response || [];
+      } catch (error) {
+        console.error('Failed to fetch strategies:', error);
+        return [];
+      }
+    },
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const strategy = strategies.find(s => s.name.toLowerCase() === 'drav') || {
+    name: 'Drav',
+    status: 'waiting' as const,
+    accuracy: 71,
+    confidence: 'high' as const,
+    bias: 'SMC Liquidity Hunt',
+    instruments: ['XAUUSD', 'NAS100', 'US30'],
+    tagline: 'Smart Money AI',
+    winRate: 71,
+    avgRR: 3.2,
+    liquiditySweeps: 24,
+    activeZones: 8,
+  };
+
+  const liquidityZones = strategy.liquidityZones || defaultLiquidityZones;
+  const smcZones = strategy.smcZones || defaultSmcZones;
+  const trades = defaultTrades; // Trade history would come from a separate endpoint
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
   return (
     <Layout>
       <div className="min-h-screen p-6 lg:p-8 space-y-8">
@@ -37,8 +103,8 @@ export default function DravStrategy() {
               <TrendingUp className="w-8 h-8 text-background" />
             </div>
             <div className="text-left">
-              <h1 className="font-display text-4xl lg:text-5xl font-bold">Drav</h1>
-              <p className="text-muted-foreground">Smart Money AI</p>
+              <h1 className="font-display text-4xl lg:text-5xl font-bold">{strategy.name}</h1>
+              <p className="text-muted-foreground">{strategy.tagline || 'Smart Money AI'}</p>
             </div>
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -49,16 +115,16 @@ export default function DravStrategy() {
         {/* Key Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <GlassCard>
-            <DataValue label="Win Rate" value="71%" size="sm" />
+            <DataValue label="Win Rate" value={`${strategy.winRate || strategy.accuracy}%`} size="sm" />
           </GlassCard>
           <GlassCard>
-            <DataValue label="Avg R:R" value="3.2" size="sm" />
+            <DataValue label="Avg R:R" value={strategy.avgRR?.toFixed(1) || "3.2"} size="sm" />
           </GlassCard>
           <GlassCard>
-            <DataValue label="Liquidity Sweeps" value="24" size="sm" />
+            <DataValue label="Liquidity Sweeps" value={strategy.liquiditySweeps?.toString() || "24"} size="sm" />
           </GlassCard>
           <GlassCard>
-            <DataValue label="Active Zones" value="8" size="sm" />
+            <DataValue label="Active Zones" value={strategy.activeZones?.toString() || "8"} size="sm" />
           </GlassCard>
         </div>
 

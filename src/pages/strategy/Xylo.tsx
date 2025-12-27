@@ -1,36 +1,91 @@
+import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { DataValue } from "@/components/ui/DataValue";
 import { HeatmapGrid } from "@/components/ui/HeatmapGrid";
-import { BarChart3, Activity, Gauge, Shield, Clock } from "lucide-react";
+import { BarChart3, Activity, Gauge, Shield, Clock, Loader2 } from "lucide-react";
+import { apiClient } from "@/lib/api";
 
-const spreadData = [
+interface Strategy {
+  name: string;
+  status: 'active' | 'waiting' | 'cooling';
+  accuracy: number;
+  confidence: 'high' | 'medium' | 'low';
+  bias: string;
+  instruments: string[];
+  tagline?: string;
+  spreadData?: Array<{ label: string; value: number; sublabel: string }>;
+  activePairs?: Array<{ symbol: string; spread: string; frequency: string; pnl: number }>;
+  tradeTape?: Array<{ time: string; dir: string; size: string; spread: string; pnl: number }>;
+  dailyTrades?: number;
+  winRate?: number;
+  avgSpreadCap?: number;
+  dailyPnl?: number;
+  maxInventoryPerSymbol?: number;
+  maxSimultaneousMarkets?: number;
+}
+
+const defaultSpreadData = [
   { label: "EURUSD", value: 92, sublabel: "0.2 pips" },
   { label: "BTCUSDT", value: 78, sublabel: "12 USD" },
-  { label: "XAUUSD", value: 85, sublabel: "0.15" },
-  { label: "ETHUSDT", value: 71, sublabel: "8 USD" },
-  { label: "GBPUSD", value: 88, sublabel: "0.3 pips" },
-  { label: "USDJPY", value: 90, sublabel: "0.2 pips" },
 ];
 
-const activePairs = [
+const defaultActivePairs = [
   { symbol: "EURUSD", spread: "0.2", frequency: "245/hr", pnl: 342.50 },
   { symbol: "BTCUSDT", spread: "12.5", frequency: "89/hr", pnl: 1245.00 },
-  { symbol: "XAUUSD", spread: "0.15", frequency: "156/hr", pnl: 567.80 },
-  { symbol: "ETHUSDT", spread: "8.2", frequency: "67/hr", pnl: 423.25 },
 ];
 
-const tradeTape = [
+const defaultTradeTape = [
   { time: "14:32:45", dir: "BUY", size: "0.10", spread: "0.2", pnl: 2.40 },
   { time: "14:32:44", dir: "SELL", size: "0.08", spread: "0.2", pnl: 1.80 },
-  { time: "14:32:43", dir: "BUY", size: "0.15", spread: "0.1", pnl: 3.20 },
-  { time: "14:32:42", dir: "SELL", size: "0.12", spread: "0.2", pnl: 2.10 },
-  { time: "14:32:41", dir: "BUY", size: "0.10", spread: "0.3", pnl: 1.50 },
-  { time: "14:32:40", dir: "SELL", size: "0.20", spread: "0.2", pnl: 4.80 },
 ];
 
 export default function XyloStrategy() {
+  const { data: strategies = [], isLoading } = useQuery<Strategy[]>({
+    queryKey: ['strategies'],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get<Strategy[]>('/strategies', true);
+        return response || [];
+      } catch (error) {
+        console.error('Failed to fetch strategies:', error);
+        return [];
+      }
+    },
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const strategy = strategies.find(s => s.name.toLowerCase() === 'xylo') || {
+    name: 'Xylo',
+    status: 'active' as const,
+    accuracy: 82,
+    confidence: 'medium' as const,
+    bias: 'Range / Mean-Revert',
+    instruments: ['BTCUSDT', 'ETHUSDT', 'EURUSD'],
+    tagline: 'AI Market Maker',
+    dailyTrades: 1247,
+    winRate: 82,
+    avgSpreadCap: 0.18,
+    dailyPnl: 2578,
+    maxInventoryPerSymbol: 50000,
+    maxSimultaneousMarkets: 6,
+  };
+
+  const spreadData = strategy.spreadData || defaultSpreadData;
+  const activePairs = strategy.activePairs || defaultActivePairs;
+  const tradeTape = strategy.tradeTape || defaultTradeTape;
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
   return (
     <Layout>
       <div className="min-h-screen p-6 lg:p-8 space-y-8">
@@ -41,8 +96,8 @@ export default function XyloStrategy() {
               <BarChart3 className="w-8 h-8 text-background" />
             </div>
             <div className="text-left">
-              <h1 className="font-display text-4xl lg:text-5xl font-bold">Xylo</h1>
-              <p className="text-muted-foreground">AI Market Maker</p>
+              <h1 className="font-display text-4xl lg:text-5xl font-bold">{strategy.name}</h1>
+              <p className="text-muted-foreground">{strategy.tagline || 'AI Market Maker'}</p>
             </div>
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -53,16 +108,16 @@ export default function XyloStrategy() {
         {/* Key Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <GlassCard>
-            <DataValue label="Daily Trades" value="1,247" size="sm" />
+            <DataValue label="Daily Trades" value={strategy.dailyTrades?.toLocaleString() || "1,247"} size="sm" />
           </GlassCard>
           <GlassCard>
-            <DataValue label="Win Rate" value="82%" size="sm" />
+            <DataValue label="Win Rate" value={`${strategy.winRate || strategy.accuracy}%`} size="sm" />
           </GlassCard>
           <GlassCard>
-            <DataValue label="Avg Spread Cap." value="0.18" size="sm" />
+            <DataValue label="Avg Spread Cap." value={strategy.avgSpreadCap?.toFixed(2) || "0.18"} size="sm" />
           </GlassCard>
           <GlassCard>
-            <DataValue label="Daily P&L" value="+$2,578" size="sm" change={3.2} />
+            <DataValue label="Daily P&L" value={`+$${strategy.dailyPnl?.toLocaleString() || "2,578"}`} size="sm" change={3.2} />
           </GlassCard>
         </div>
 
@@ -140,11 +195,11 @@ export default function XyloStrategy() {
           <div className="grid md:grid-cols-3 gap-4">
             <div className="p-4 bg-muted/30 rounded-lg">
               <p className="text-xs text-muted-foreground uppercase mb-2">Max Inventory Per Symbol</p>
-              <p className="font-mono font-bold text-lg">$50,000</p>
+              <p className="font-mono font-bold text-lg">${strategy.maxInventoryPerSymbol?.toLocaleString() || "50,000"}</p>
             </div>
             <div className="p-4 bg-muted/30 rounded-lg">
               <p className="text-xs text-muted-foreground uppercase mb-2">Max Simultaneous Markets</p>
-              <p className="font-mono font-bold text-lg">6</p>
+              <p className="font-mono font-bold text-lg">{strategy.maxSimultaneousMarkets || 6}</p>
             </div>
             <div className="p-4 bg-muted/30 rounded-lg">
               <p className="text-xs text-muted-foreground uppercase mb-2">Circuit Breaker</p>

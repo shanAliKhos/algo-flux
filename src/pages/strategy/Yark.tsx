@@ -1,34 +1,86 @@
+import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { DataValue } from "@/components/ui/DataValue";
 import { MiniChart } from "@/components/ui/MiniChart";
 import { TradeTable, Trade } from "@/components/ui/TradeTable";
-import { LineChart, Activity, TrendingUp, BarChart } from "lucide-react";
+import { LineChart, Activity, TrendingUp, BarChart, Loader2 } from "lucide-react";
+import { apiClient } from "@/lib/api";
 
-const correlationMatrix = [
+interface Strategy {
+  name: string;
+  status: 'active' | 'waiting' | 'cooling';
+  accuracy: number;
+  confidence: 'high' | 'medium' | 'low';
+  bias: string;
+  instruments: string[];
+  tagline?: string;
+  correlationMatrix?: Array<{ pair: string; correlation: number; strength: string }>;
+  volatilityData?: Array<{ asset: string; h1: number; h4: number; d1: number }>;
+  winRate?: number;
+  sharpeRatio?: number;
+  pairsTracked?: number;
+  activeTrades?: number;
+}
+
+const defaultCorrelationMatrix = [
   { pair: "EURUSD / GBPUSD", correlation: 0.85, strength: "Strong+" },
   { pair: "NAS100 / SPX500", correlation: 0.92, strength: "Strong+" },
-  { pair: "BTCUSD / ETHUSD", correlation: 0.78, strength: "Strong" },
-  { pair: "XAUUSD / USDJPY", correlation: -0.65, strength: "Inverse" },
-  { pair: "DXY / EURUSD", correlation: -0.95, strength: "Inverse+" },
-  { pair: "Oil / CAD", correlation: 0.72, strength: "Strong" },
 ];
 
-const volatilityData = [
+const defaultVolatilityData = [
   { asset: "XAUUSD", h1: 68, h4: 72, d1: 58 },
   { asset: "BTCUSD", h1: 85, h4: 78, d1: 82 },
-  { asset: "EURUSD", h1: 35, h4: 42, d1: 38 },
-  { asset: "NAS100", h1: 62, h4: 55, d1: 48 },
-  { asset: "TSLA", h1: 78, h4: 82, d1: 75 },
 ];
 
-const trades: Trade[] = [
+const defaultTrades: Trade[] = [
   { id: "1", time: "11:30", instrument: "EUR/GBP Spread", direction: "buy", entry: 0.8542, size: "1.00", pnl: 345, rMultiple: 1.8 },
   { id: "2", time: "09:15", instrument: "Gold/Yen Pair", direction: "sell", entry: 150.25, size: "0.50", pnl: 520, rMultiple: 2.4 },
-  { id: "3", time: "Yesterday", instrument: "BTC/ETH Ratio", direction: "buy", entry: 18.5, size: "0.25", pnl: -180, rMultiple: -0.8 },
 ];
 
 export default function YarkStrategy() {
+  const { data: strategies = [], isLoading } = useQuery<Strategy[]>({
+    queryKey: ['strategies'],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get<Strategy[]>('/strategies', true);
+        return response || [];
+      } catch (error) {
+        console.error('Failed to fetch strategies:', error);
+        return [];
+      }
+    },
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const strategy = strategies.find(s => s.name.toLowerCase() === 'yark') || {
+    name: 'Yark',
+    status: 'active' as const,
+    accuracy: 85,
+    confidence: 'high' as const,
+    bias: 'Statistical Edge',
+    instruments: ['EURUSD', 'GBPJPY', 'AUDUSD', 'BTCUSDT'],
+    tagline: 'Quantitative Statistical Engine',
+    winRate: 85,
+    sharpeRatio: 2.4,
+    pairsTracked: 48,
+    activeTrades: 6,
+  };
+
+  const correlationMatrix = strategy.correlationMatrix || defaultCorrelationMatrix;
+  const volatilityData = strategy.volatilityData || defaultVolatilityData;
+  const trades = defaultTrades;
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
   return (
     <Layout>
       <div className="min-h-screen p-6 lg:p-8 space-y-8">
@@ -39,8 +91,8 @@ export default function YarkStrategy() {
               <LineChart className="w-8 h-8 text-background" />
             </div>
             <div className="text-left">
-              <h1 className="font-display text-4xl lg:text-5xl font-bold">Yark</h1>
-              <p className="text-muted-foreground">Quantitative Statistical Engine</p>
+              <h1 className="font-display text-4xl lg:text-5xl font-bold">{strategy.name}</h1>
+              <p className="text-muted-foreground">{strategy.tagline || 'Quantitative Statistical Engine'}</p>
             </div>
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -51,16 +103,16 @@ export default function YarkStrategy() {
         {/* Key Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <GlassCard>
-            <DataValue label="Win Rate" value="85%" size="sm" />
+            <DataValue label="Win Rate" value={`${strategy.winRate || strategy.accuracy}%`} size="sm" />
           </GlassCard>
           <GlassCard>
-            <DataValue label="Sharpe Ratio" value="2.4" size="sm" />
+            <DataValue label="Sharpe Ratio" value={strategy.sharpeRatio?.toFixed(1) || "2.4"} size="sm" />
           </GlassCard>
           <GlassCard>
-            <DataValue label="Pairs Tracked" value="48" size="sm" />
+            <DataValue label="Pairs Tracked" value={strategy.pairsTracked?.toString() || "48"} size="sm" />
           </GlassCard>
           <GlassCard>
-            <DataValue label="Active Trades" value="6" size="sm" />
+            <DataValue label="Active Trades" value={strategy.activeTrades?.toString() || "6"} size="sm" />
           </GlassCard>
         </div>
 

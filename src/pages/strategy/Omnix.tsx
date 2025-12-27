@@ -1,52 +1,96 @@
+import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { DataValue } from "@/components/ui/DataValue";
 import { MiniChart } from "@/components/ui/MiniChart";
 import { TradeTable, Trade } from "@/components/ui/TradeTable";
-import { PieChart, Activity, Layers, TrendingUp, AlertTriangle } from "lucide-react";
+import { PieChart, Activity, Layers, TrendingUp, AlertTriangle, Loader2 } from "lucide-react";
+import { apiClient } from "@/lib/api";
 
-const factors = [
+interface Strategy {
+  name: string;
+  status: 'active' | 'waiting' | 'cooling';
+  accuracy: number;
+  confidence: 'high' | 'medium' | 'low';
+  bias: string;
+  instruments: string[];
+  tagline?: string;
+  factors?: Array<{ name: string; weight: number; active: boolean }>;
+  portfolioExposure?: Array<{ category: string; value: number; color: string }>;
+  scenarios?: Array<{ trigger: string; exposure: string; action: string }>;
+  sharpeRatio?: number;
+  maxDD?: number;
+  monthlyReturn?: number;
+}
+
+const defaultFactors = [
   { name: "Trend", weight: 28, active: true },
   { name: "Mean Reversion", weight: 22, active: true },
   { name: "Volatility", weight: 18, active: true },
-  { name: "Liquidity", weight: 15, active: true },
-  { name: "Regime", weight: 17, active: true },
 ];
 
-const portfolioExposure = [
+const defaultPortfolioExposure = [
   { category: "Forex", value: 25, color: "bg-blue-500" },
   { category: "Indices", value: 20, color: "bg-green-500" },
-  { category: "Stocks", value: 18, color: "bg-purple-500" },
-  { category: "Crypto", value: 22, color: "bg-orange-500" },
-  { category: "Gold", value: 15, color: "bg-yellow-500" },
 ];
 
-const scenarios = [
+const defaultScenarios = [
   { 
     trigger: "Volatility spikes +50%", 
     exposure: "-15%",
     action: "Reduce position sizes, tighten stops"
   },
-  { 
-    trigger: "Equities drop 3%", 
-    exposure: "-20%",
-    action: "Hedge with VIX, reduce long equity"
-  },
-  { 
-    trigger: "Dollar strengthens 2%", 
-    exposure: "+5%",
-    action: "Increase USD pairs, reduce EM exposure"
-  },
 ];
 
-const trades: Trade[] = [
+const defaultTrades: Trade[] = [
   { id: "1", time: "Today", instrument: "Multi-Asset Rebalance", strategy: "Omnix", direction: "buy", entry: 0, size: "Portfolio", pnl: 4250 },
   { id: "2", time: "Yesterday", instrument: "Risk-Off Hedge", strategy: "Omnix", direction: "sell", entry: 0, size: "5% Hedge", pnl: 1820 },
-  { id: "3", time: "2d ago", instrument: "Crypto Rotation", strategy: "Omnix", direction: "buy", entry: 0, size: "Sector", pnl: 3420 },
 ];
 
 export default function OmnixStrategy() {
+  const { data: strategies = [], isLoading } = useQuery<Strategy[]>({
+    queryKey: ['strategies'],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get<Strategy[]>('/strategies', true);
+        return response || [];
+      } catch (error) {
+        console.error('Failed to fetch strategies:', error);
+        return [];
+      }
+    },
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const strategy = strategies.find(s => s.name.toLowerCase() === 'omnix') || {
+    name: 'Omnix',
+    status: 'active' as const,
+    accuracy: 89,
+    confidence: 'high' as const,
+    bias: 'Multi-Factor Balanced',
+    instruments: ['ALL'],
+    tagline: 'Multi-Factor Hedge Fund Brain',
+    sharpeRatio: 2.8,
+    maxDD: -3.2,
+    monthlyReturn: 8.4,
+  };
+
+  const factors = strategy.factors || defaultFactors;
+  const portfolioExposure = strategy.portfolioExposure || defaultPortfolioExposure;
+  const scenarios = strategy.scenarios || defaultScenarios;
+  const trades = defaultTrades;
   const totalWeight = factors.reduce((sum, f) => sum + f.weight, 0);
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
 
   return (
     <Layout>
@@ -58,8 +102,8 @@ export default function OmnixStrategy() {
               <PieChart className="w-8 h-8 text-background" />
             </div>
             <div className="text-left">
-              <h1 className="font-display text-4xl lg:text-5xl font-bold">Omnix</h1>
-              <p className="text-muted-foreground">Multi-Factor Hedge Fund Brain</p>
+              <h1 className="font-display text-4xl lg:text-5xl font-bold">{strategy.name}</h1>
+              <p className="text-muted-foreground">{strategy.tagline || 'Multi-Factor Hedge Fund Brain'}</p>
             </div>
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -70,16 +114,16 @@ export default function OmnixStrategy() {
         {/* Key Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <GlassCard>
-            <DataValue label="Sharpe Ratio" value="2.8" size="sm" />
+            <DataValue label="Sharpe Ratio" value={strategy.sharpeRatio?.toFixed(1) || "2.8"} size="sm" />
           </GlassCard>
           <GlassCard>
-            <DataValue label="Max DD" value="-3.2%" size="sm" />
+            <DataValue label="Max DD" value={`${strategy.maxDD?.toFixed(1) || "-3.2"}%`} size="sm" />
           </GlassCard>
           <GlassCard>
-            <DataValue label="Active Factors" value="5" size="sm" />
+            <DataValue label="Active Factors" value={factors.filter(f => f.active).length.toString()} size="sm" />
           </GlassCard>
           <GlassCard>
-            <DataValue label="Monthly Return" value="+8.4%" size="sm" change={8.4} />
+            <DataValue label="Monthly Return" value={`+${strategy.monthlyReturn?.toFixed(1) || "8.4"}%`} size="sm" change={strategy.monthlyReturn || 8.4} />
           </GlassCard>
         </div>
 

@@ -1,41 +1,94 @@
+import { useQuery } from "@tanstack/react-query";
 import { Layout } from "@/components/layout/Layout";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { DataValue } from "@/components/ui/DataValue";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TradeTable, Trade } from "@/components/ui/TradeTable";
 import { MiniChart } from "@/components/ui/MiniChart";
-import { Cpu, TrendingUp, Target, Activity, ArrowUpRight } from "lucide-react";
+import { Cpu, TrendingUp, Target, Activity, ArrowUpRight, Loader2 } from "lucide-react";
+import { apiClient } from "@/lib/api";
 
-const trendScanner = [
+interface Strategy {
+  name: string;
+  status: 'active' | 'waiting' | 'cooling';
+  accuracy: number;
+  confidence: 'high' | 'medium' | 'low';
+  bias: string;
+  instruments: string[];
+  tagline?: string;
+  trendScanner?: Array<{ instrument: string; score: number; direction: string; momentum: string }>;
+  breakoutWatchlist?: Array<{ instrument: string; level: string; distance: string; probability: number }>;
+  openPositions?: Array<{ instrument: string; entry: number; current: number; trail: number; pnl: number }>;
+  winRate?: number;
+  avgWinner?: string;
+  activeTrades?: number;
+  unrealizedPnl?: number;
+}
+
+const defaultTrendScanner = [
   { instrument: "TSLA", score: 92, direction: "up", momentum: "Strong" },
   { instrument: "BTCUSDT", score: 87, direction: "up", momentum: "Strong" },
-  { instrument: "NAS100", score: 78, direction: "up", momentum: "Moderate" },
-  { instrument: "NVDA", score: 85, direction: "up", momentum: "Strong" },
-  { instrument: "XAUUSD", score: 65, direction: "down", momentum: "Moderate" },
-  { instrument: "EURUSD", score: 42, direction: "down", momentum: "Weak" },
 ];
 
-const breakoutWatchlist = [
+const defaultBreakoutWatchlist = [
   { instrument: "AAPL", level: "195.00", distance: "2.8%", probability: 72 },
   { instrument: "MSFT", level: "420.00", distance: "1.5%", probability: 81 },
-  { instrument: "BTCUSDT", level: "45000", distance: "3.2%", probability: 68 },
-  { instrument: "AMZN", level: "185.00", distance: "2.1%", probability: 75 },
 ];
 
-const openPositions = [
+const defaultOpenPositions = [
   { instrument: "TSLA", entry: 238.50, current: 245.30, trail: 240.00, pnl: 680 },
   { instrument: "BTCUSDT", entry: 42500, current: 43892, trail: 43000, pnl: 1392 },
-  { instrument: "NAS100", entry: 17650, current: 17834, trail: 17750, pnl: 920 },
 ];
 
-const trades: Trade[] = [
+const defaultTrades: Trade[] = [
   { id: "1", time: "12:45", instrument: "TSLA", direction: "buy", entry: 238.50, size: "100", pnl: 680, rMultiple: 2.8 },
   { id: "2", time: "10:30", instrument: "NVDA", direction: "buy", entry: 485.20, exit: 502.80, size: "50", pnl: 880, rMultiple: 3.5 },
-  { id: "3", time: "Yesterday", instrument: "NAS100", direction: "buy", entry: 17520, exit: 17780, size: "5", pnl: 1300, rMultiple: 2.2 },
-  { id: "4", time: "Yesterday", instrument: "AAPL", direction: "buy", entry: 188.50, exit: 186.20, size: "75", pnl: -172.5, rMultiple: -0.8 },
 ];
 
 export default function TenzorStrategy() {
+  const { data: strategies = [], isLoading } = useQuery<Strategy[]>({
+    queryKey: ['strategies'],
+    queryFn: async () => {
+      try {
+        const response = await apiClient.get<Strategy[]>('/strategies', true);
+        return response || [];
+      } catch (error) {
+        console.error('Failed to fetch strategies:', error);
+        return [];
+      }
+    },
+    retry: 1,
+    staleTime: 5 * 60 * 1000,
+  });
+
+  const strategy = strategies.find(s => s.name.toLowerCase() === 'tenzor') || {
+    name: 'Tenzor',
+    status: 'cooling' as const,
+    accuracy: 76,
+    confidence: 'medium' as const,
+    bias: 'Momentum Breakout',
+    instruments: ['TSLA', 'AAPL', 'NAS100', 'BTCUSDT'],
+    tagline: 'Momentum & Trend Engine',
+    winRate: 76,
+    avgWinner: '+2.8R',
+    activeTrades: 3,
+    unrealizedPnl: 2992,
+  };
+
+  const trendScanner = strategy.trendScanner || defaultTrendScanner;
+  const breakoutWatchlist = strategy.breakoutWatchlist || defaultBreakoutWatchlist;
+  const openPositions = strategy.openPositions || defaultOpenPositions;
+  const trades = defaultTrades;
+
+  if (isLoading) {
+    return (
+      <Layout>
+        <div className="flex items-center justify-center min-h-screen">
+          <Loader2 className="w-8 h-8 animate-spin text-primary" />
+        </div>
+      </Layout>
+    );
+  }
   return (
     <Layout>
       <div className="min-h-screen p-6 lg:p-8 space-y-8">
@@ -46,8 +99,8 @@ export default function TenzorStrategy() {
               <Cpu className="w-8 h-8 text-background" />
             </div>
             <div className="text-left">
-              <h1 className="font-display text-4xl lg:text-5xl font-bold">Tenzor</h1>
-              <p className="text-muted-foreground">Momentum & Trend Engine</p>
+              <h1 className="font-display text-4xl lg:text-5xl font-bold">{strategy.name}</h1>
+              <p className="text-muted-foreground">{strategy.tagline || 'Momentum & Trend Engine'}</p>
             </div>
           </div>
           <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -58,16 +111,16 @@ export default function TenzorStrategy() {
         {/* Key Stats */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <GlassCard>
-            <DataValue label="Win Rate" value="76%" size="sm" />
+            <DataValue label="Win Rate" value={`${strategy.winRate || strategy.accuracy}%`} size="sm" />
           </GlassCard>
           <GlassCard>
-            <DataValue label="Avg Winner" value="+2.8R" size="sm" />
+            <DataValue label="Avg Winner" value={strategy.avgWinner || "+2.8R"} size="sm" />
           </GlassCard>
           <GlassCard>
-            <DataValue label="Open Trades" value="3" size="sm" />
+            <DataValue label="Open Trades" value={strategy.activeTrades?.toString() || "3"} size="sm" />
           </GlassCard>
           <GlassCard>
-            <DataValue label="Unrealized P&L" value="+$2,992" size="sm" change={4.2} />
+            <DataValue label="Unrealized P&L" value={`+$${strategy.unrealizedPnl?.toLocaleString() || "2,992"}`} size="sm" change={4.2} />
           </GlassCard>
         </div>
 
