@@ -801,4 +801,77 @@ export const adminApi = {
       strategies: string[];
     }>;
   }) => apiClient.post('/admin/portfolio', data),
+  getExecution: () =>
+    apiClient.get<{
+      orderbook: {
+        instrument: string;
+        bids: Array<{
+          price: number;
+          size: number;
+          total: number;
+        }>;
+        asks: Array<{
+          price: number;
+          size: number;
+          total: number;
+        }>;
+        spread: number;
+      };
+      tradeTicket: {
+        instrument: string;
+        strategy: string;
+        direction: string;
+        entry: number;
+        stopLoss: number;
+        takeProfit: number;
+        size: string;
+        risk: string;
+      };
+      executionMetrics: {
+        speed: string;
+        slippage: string;
+        fillQuality: string;
+      };
+      equityCurve: number[];
+      exposure?: {
+        currentExposure: string;
+        openPnL: string;
+      };
+    }>('/admin/execution', true), // Skip auth for public endpoint
+  updateExecution: (data: {
+    orderbook: {
+      instrument: string;
+      bids: Array<{
+        price: number;
+        size: number;
+        total: number;
+      }>;
+      asks: Array<{
+        price: number;
+        size: number;
+        total: number;
+      }>;
+      spread: number;
+    };
+    tradeTicket: {
+      instrument: string;
+      strategy: string;
+      direction: string;
+      entry: number;
+      stopLoss: number;
+      takeProfit: number;
+      size: string;
+      risk: string;
+    };
+    executionMetrics: {
+      speed: string;
+      slippage: string;
+      fillQuality: string;
+    };
+    equityCurve: number[];
+    exposure?: {
+      currentExposure: string;
+      openPnL: string;
+    };
+  }) => apiClient.post('/admin/execution', data),
 };

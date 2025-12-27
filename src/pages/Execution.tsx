@@ -1,3 +1,4 @@
+import { useState, useEffect, useRef } from "react";
 import { Layout } from "@/components/layout/Layout";
 import { GlassCard } from "@/components/ui/GlassCard";
 import { OrderBook } from "@/components/ui/OrderBook";
@@ -6,26 +7,197 @@ import { DataValue } from "@/components/ui/DataValue";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { Zap, ArrowRight, Clock, Target, Shield, Activity } from "lucide-react";
 
-const tradeTicket = {
-  instrument: "XAUUSD",
-  strategy: "Nuvex",
-  direction: "BUY",
-  entry: 2034.50,
-  stopLoss: 2028.00,
-  takeProfit: 2052.00,
-  size: "0.50 lots",
-  risk: "1.2%",
-};
+interface OrderBookLevel {
+  price: number;
+  size: number;
+  total: number;
+}
 
-const executionMetrics = {
-  speed: "12ms",
-  slippage: "0.3 pips",
-  fillQuality: "Excellent",
-};
-
-const equityData = Array.from({ length: 30 }, (_, i) => 100000 + Math.sin(i / 5) * 2000 + i * 150);
+interface ExecutionData {
+  orderbook: {
+    instrument: string;
+    bids: OrderBookLevel[];
+    asks: OrderBookLevel[];
+    spread: number;
+  };
+  tradeTicket: {
+    instrument: string;
+    strategy: string;
+    direction: string;
+    entry: number;
+    stopLoss: number;
+    takeProfit: number;
+    size: string;
+    risk: string;
+  };
+  executionMetrics: {
+    speed: string;
+    slippage: string;
+    fillQuality: string;
+  };
+  equityCurve: number[];
+  exposure: {
+    currentExposure: string;
+    openPnL: string;
+  };
+}
 
 export default function Execution() {
+  const [data, setData] = useState<ExecutionData | null>(null);
+  const equityCurveRef = useRef<number[]>([]);
+
+  // Generate real-time dynamic execution data
+  const generateExecutionData = (): ExecutionData => {
+    const now = Date.now();
+    const timeVariation = Math.sin(now / 10000) * 0.5; // Slow price variation
+    
+    // Base price for XAUUSD (Gold) - realistic range
+    const basePrice = 2034.50;
+    const priceVariation = (Math.random() - 0.5) * 2; // ±1 USD variation
+    const currentPrice = basePrice + priceVariation + timeVariation;
+    
+    // Generate dynamic orderbook with realistic price levels
+    const generateOrderBookLevels = (base: number, isBid: boolean): OrderBookLevel[] => {
+      const levels: OrderBookLevel[] = [];
+      let runningTotal = 0;
+      for (let i = 0; i < 5; i++) {
+        const priceOffset = isBid ? -i * 0.1 : i * 0.1;
+        const price = currentPrice + priceOffset;
+        const size = Math.random() * 300 + 50; // 50-350 lots
+        runningTotal += size;
+        levels.push({
+          price: Math.round(price * 100) / 100,
+          size: Math.round(size * 10) / 10,
+          total: Math.round(runningTotal * 10) / 10,
+        });
+      }
+      return levels;
+    };
+
+    const bids = generateOrderBookLevels(currentPrice, true).sort((a, b) => b.price - a.price);
+    const asks = generateOrderBookLevels(currentPrice, false).sort((a, b) => a.price - b.price);
+    const spread = Math.round((asks[0].price - bids[0].price) * 100) / 100;
+
+    // Generate dynamic execution metrics
+    const latency = Math.round((Math.random() * 15 + 8) * 10) / 10; // 8-23ms
+    const slippagePips = Math.round((Math.random() * 0.5 + 0.1) * 10) / 10; // 0.1-0.6 pips
+    const fillQualityOptions = ['Excellent', 'Good', 'Fair'];
+    const fillQuality = fillQualityOptions[Math.floor(Math.random() * fillQualityOptions.length)];
+
+    // Update equity curve (growing over time with realistic variation)
+    if (equityCurveRef.current.length === 0) {
+      // Generate initial curve
+      const baseEquity = 100000;
+      equityCurveRef.current = Array.from({ length: 30 }, (_, i) => {
+        const variation = (Math.random() - 0.3) * 2000;
+        const trend = i * 100;
+        return Math.round(baseEquity + variation + trend);
+      });
+    } else {
+      // Continue from existing curve
+      const lastValue = equityCurveRef.current[equityCurveRef.current.length - 1];
+      // Add new point with realistic growth/variation
+      const growth = (Math.random() - 0.3) * 500; // Slight positive bias
+      const newValue = Math.max(95000, lastValue + growth);
+      equityCurveRef.current.push(Math.round(newValue));
+      // Keep only last 50 points
+      if (equityCurveRef.current.length > 50) {
+        equityCurveRef.current = equityCurveRef.current.slice(-50);
+      }
+    }
+
+    // Generate dynamic exposure data
+    const currentExposure = Math.round((Math.random() * 20 + 25) * 10) / 10; // 25-45%
+    const pnlVariation = (Math.random() - 0.4) * 5000; // Slight positive bias
+    const openPnL = pnlVariation >= 0 
+      ? `+$${Math.round(pnlVariation).toLocaleString()}` 
+      : `-$${Math.abs(Math.round(pnlVariation)).toLocaleString()}`;
+
+    // Generate trade ticket
+    const strategies = ['Nuvex', 'Xylo', 'Drav', 'Yark', 'Tenzor', 'Omnix'];
+    const directions = ['BUY', 'SELL'];
+    const strategy = strategies[Math.floor(Math.random() * strategies.length)];
+    const direction = directions[Math.floor(Math.random() * directions.length)];
+    
+    const stopLossDistance = currentPrice * 0.003; // ~0.3% stop loss
+    const takeProfitDistance = currentPrice * 0.008; // ~0.8% take profit
+    
+    const tradeTicket = {
+      instrument: 'XAUUSD',
+      strategy: strategy,
+      direction: direction,
+      entry: Math.round(currentPrice * 100) / 100,
+      stopLoss: direction === 'BUY' 
+        ? Math.round((currentPrice - stopLossDistance) * 100) / 100
+        : Math.round((currentPrice + stopLossDistance) * 100) / 100,
+      takeProfit: direction === 'BUY'
+        ? Math.round((currentPrice + takeProfitDistance) * 100) / 100
+        : Math.round((currentPrice - takeProfitDistance) * 100) / 100,
+      size: `${(Math.random() * 0.5 + 0.25).toFixed(2)} lots`,
+      risk: `${(Math.random() * 0.8 + 0.8).toFixed(1)}%`,
+    };
+
+    return {
+      orderbook: {
+        instrument: 'XAUUSD',
+        bids,
+        asks,
+        spread,
+      },
+      tradeTicket,
+      executionMetrics: {
+        speed: `${latency}ms`,
+        slippage: `${slippagePips} pips`,
+        fillQuality,
+      },
+      equityCurve: [...equityCurveRef.current],
+      exposure: {
+        currentExposure: `${currentExposure}%`,
+        openPnL,
+      },
+    };
+  };
+
+  // Initialize and update data in real-time
+  useEffect(() => {
+    // Generate initial data
+    setData(generateExecutionData());
+
+    // Update data every 2 seconds for real-time feel
+    const interval = setInterval(() => {
+      setData(generateExecutionData());
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Use generated data or fallback
+  const orderbook = data?.orderbook || {
+    instrument: "XAUUSD",
+    bids: [],
+    asks: [],
+    spread: 0,
+  };
+  const tradeTicket = data?.tradeTicket || {
+    instrument: "XAUUSD",
+    strategy: "Nuvex",
+    direction: "BUY",
+    entry: 2034.50,
+    stopLoss: 2028.00,
+    takeProfit: 2052.00,
+    size: "0.50 lots",
+    risk: "1.2%",
+  };
+  const executionMetrics = data?.executionMetrics || {
+    speed: "12ms",
+    slippage: "0.3 pips",
+    fillQuality: "Excellent",
+  };
+  const equityData = data?.equityCurve || Array.from({ length: 30 }, (_, i) => 100000 + Math.sin(i / 5) * 2000 + i * 150);
+  const exposure = data?.exposure || {
+    currentExposure: "34.5%",
+    openPnL: "+$2,340",
+  };
   return (
     <Layout>
       <div className="min-h-screen p-6 lg:p-8 space-y-8">
@@ -47,24 +219,12 @@ export default function Execution() {
           <GlassCard>
             <div className="flex items-center justify-between mb-6">
               <h3 className="font-display font-bold text-xl">Orderbook & Liquidity</h3>
-              <span className="text-sm font-mono text-primary">XAUUSD</span>
+              <span className="text-sm font-mono text-primary">{orderbook.instrument}</span>
             </div>
             <OrderBook 
-              bids={[
-                { price: 2034.50, size: 125.4, total: 125.4 },
-                { price: 2034.40, size: 89.2, total: 214.6 },
-                { price: 2034.30, size: 234.8, total: 449.4 },
-                { price: 2034.20, size: 156.3, total: 605.7 },
-                { price: 2034.10, size: 312.5, total: 918.2 },
-              ]}
-              asks={[
-                { price: 2034.60, size: 98.7, total: 98.7 },
-                { price: 2034.70, size: 145.3, total: 244.0 },
-                { price: 2034.80, size: 267.9, total: 511.9 },
-                { price: 2034.90, size: 189.4, total: 701.3 },
-                { price: 2035.00, size: 421.2, total: 1122.5 },
-              ]}
-              spread={0.10}
+              bids={orderbook.bids}
+              asks={orderbook.asks}
+              spread={orderbook.spread}
             />
           </GlassCard>
 
@@ -87,7 +247,7 @@ export default function Execution() {
               </div>
 
               <div className="flex items-center gap-4 p-4 bg-primary/10 rounded-lg border border-primary/20">
-                <StatusBadge sentiment="bullish" text={tradeTicket.direction} />
+                <StatusBadge sentiment={tradeTicket.direction === "BUY" ? "bullish" : "bearish"} text={tradeTicket.direction} />
                 <ArrowRight className="w-4 h-4 text-muted-foreground" />
                 <span className="font-mono font-bold text-lg">{tradeTicket.entry}</span>
               </div>
@@ -146,19 +306,21 @@ export default function Execution() {
 
         {/* Live Equity Strip */}
         <GlassCard>
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="font-display font-bold text-xl">Live Equity Curve</h3>
-            <div className="flex items-center gap-4">
-              <div>
-                <p className="text-xs text-muted-foreground">Current Exposure</p>
-                <p className="text-sm font-mono font-medium">34.5%</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground">Open P&L</p>
-                <p className="text-sm font-mono font-medium text-bullish">+$2,340</p>
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="font-display font-bold text-xl">Live Equity Curve</h3>
+              <div className="flex items-center gap-4">
+                <div>
+                  <p className="text-xs text-muted-foreground">Current Exposure</p>
+                  <p className="text-sm font-mono font-medium">{exposure.currentExposure}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-muted-foreground">Open P&L</p>
+                  <p className={`text-sm font-mono font-medium ${exposure.openPnL.startsWith('+') ? 'text-bullish' : exposure.openPnL.startsWith('-') ? 'text-bearish' : ''}`}>
+                    {exposure.openPnL}
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
           <MiniChart data={equityData} color="primary" height={120} />
         </GlassCard>
       </div>
